@@ -14,19 +14,22 @@ import java.util.Queue;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
+import chatHack.reader.Reader;
 
 public class ServerChatHack {
 
 	static private class Context {
 
-		final private SelectionKey key;
-		final private SocketChannel sc;
-		final private ServerChatHack server;
+		private final SelectionKey key;
+		private final SocketChannel sc;
+		private final ServerChatHack server;
 		private boolean closed = false;
-		final private ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
-		final private ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
-		final private Queue<Frame> queue = new LinkedList<>();
-
+		private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
+		private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
+		
+		private final Queue<Frame> queue = new LinkedList<>();
+		private Reader reader;
+		
 		private Context(ServerChatHack server, SelectionKey key) {
 			this.key = key;
 			this.sc = (SocketChannel) key.channel();
@@ -34,15 +37,44 @@ public class ServerChatHack {
 		}
 
 		private void processIn() {
-
+			checkOpcode();
+		}
+		
+		private void checkOpcode() {
+			byte opcode = bbin.get();
+			
+			switch (opcode) {
+			case '0': {
+//				reader = new 
+				return;
+			}
+			case '1': {
+				return;
+			}
+			case '2': {
+				return;
+			}
+			case '3': {
+				return;
+			}
+			default: {
+//				envoyer un message d'erreur a l'expediteur?
+				
+				return;
+			}
+			}
 		}
 
 		private void queueFrame(Frame frame) {
-
+			queue.add(frame);
+			processOut();
+			updateInterestOps();
 		}
 
 		private void processOut() {
-
+			while (!queue.isEmpty()) {
+				bbout.put(queue.poll().toByteBuffer());
+			}
 		}
 
 		private void updateInterestOps() {
@@ -89,8 +121,8 @@ public class ServerChatHack {
 
 	}
 
-	static private int BUFFER_SIZE = 1_024;
-	static private Logger logger = Logger.getLogger(ServerChatHack.class.getName());
+	private static int BUFFER_SIZE = 1_024;
+	private static Logger logger = Logger.getLogger(ServerChatHack.class.getName());
 
 	private final ServerSocketChannel serverSocketChannel;
 	private final Selector selector;

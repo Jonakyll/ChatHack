@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
+import chatHack.frame.TestFrame;
 import chatHack.reader.LogReader;
 import chatHack.reader.Reader;
 
@@ -41,44 +42,50 @@ public class ServerChatHack {
 		}
 
 		private void processIn() {
-			checkOpcode();
+//			checkOpcode();
+//			
+//			for (;;) {
+//				Reader.ProcessStatus status = reader.process();
+//				
+//				switch(status) {
+//				case DONE: {
+//					Frame frame = (Frame) reader.get();
+//					server.broadcast(frame);
+//					reader.reset();
+//					break;
+//				}
+//				
+//				case REFILL:
+//					return;
+//				
+//				case ERROR:
+//					silentlyClose();
+//					return;
+//				}
+//			}
 			
-			for (;;) {
-				Reader.ProcessStatus status = reader.process();
-				
-				switch(status) {
-				case DONE: {
-					Frame frame = (Frame) reader.get();
-					server.broadcast(frame);
-					reader.reset();
-					break;
-				}
-				
-				case REFILL:
-					return;
-				
-				case ERROR:
-					silentlyClose();
-					return;
-				}
+			bbin.flip();
+			while (bbin.hasRemaining()) {
+				server.broadcast(new TestFrame(bbin.get()));
 			}
+			bbin.compact();
 		}
 		
 		private void checkOpcode() {
 			byte opcode = bbin.get();
 			
 			switch (opcode) {
-			case '0': {
+			case 0: {
 				reader = new LogReader(bbin);
 				return;
 			}
-			case '1': {
+			case 1: {
 				return;
 			}
-			case '2': {
+			case 2: {
 				return;
 			}
-			case '3': {
+			case 3: {
 				return;
 			}
 			default: {
@@ -135,6 +142,7 @@ public class ServerChatHack {
 		}
 
 		public void doRead() throws IOException {
+			System.out.println("wesh j'ai lu");
 			if (sc.read(bbin) == -1) {
 				closed = true;
 			}
@@ -235,7 +243,8 @@ public class ServerChatHack {
 			usage();
 			return;
 		}
-		new ServerChatHack(Integer.parseInt(args[0])).launch();
+		ServerChatHack server = new ServerChatHack(Integer.parseInt(args[0]));
+		server.launch();
 	}
 
 	private static void usage() {

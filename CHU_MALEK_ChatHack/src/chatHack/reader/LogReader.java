@@ -81,9 +81,9 @@ public class LogReader implements Reader<Frame> {
 		}
 		
 		switch (code) {
-		case '0':
+		case 0:
 			return new LogWithPwdFrame(name, password);
-		case '1':
+		case 1:
 			return new LogNoPwdFrame(name);
 		default:
 			return new LogErrFrame();

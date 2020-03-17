@@ -2,9 +2,7 @@ package chatHack.reader;
 
 import java.nio.ByteBuffer;
 
-import chatHack.frame.Frame;
-
-public class ByteReader implements Reader {
+public class ByteReader implements Reader<Byte> {
 	
 	private enum State {
 		DONE,
@@ -42,17 +40,16 @@ public class ByteReader implements Reader {
 	}
 
 	@Override
-	public Frame get() {
+	public Byte get() {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		return null;
+		return value;
 	}
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-		
+		state = State.WAITING;
 	}
 
 }

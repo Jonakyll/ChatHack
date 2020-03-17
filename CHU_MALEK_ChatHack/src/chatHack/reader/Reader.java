@@ -1,8 +1,6 @@
 package chatHack.reader;
 
-import chatHack.frame.Frame;
-
-public interface Reader {
+public interface Reader<E> {
 
 	public static enum ProcessStatus {
 		DONE,
@@ -12,7 +10,7 @@ public interface Reader {
 	
 	ProcessStatus process();
 	
-	Frame get();
+	E get();
 	
 	void reset();
 	

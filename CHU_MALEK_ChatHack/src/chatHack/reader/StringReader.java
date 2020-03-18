@@ -3,7 +3,10 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class StringReader implements Reader<String> {
+import chatHack.frame.Frame;
+import chatHack.frame.MessageFrame;
+
+public class StringReader implements Reader<Frame> {
 
 	private enum State {
 		DONE,
@@ -17,11 +20,8 @@ public class StringReader implements Reader<String> {
 	private int size;
 	private String msg;
 	
-	private final IntReader intReader;
-	
 	public StringReader(ByteBuffer bb) {
 		this.bb = bb;
-		this.intReader = new IntReader(bb);
 	}
 	
 	@Override
@@ -35,11 +35,13 @@ public class StringReader implements Reader<String> {
 			switch (state) {
 			
 			case WAITING_INT: {
-				ProcessStatus intStatus = intReader.process();
-				if (intStatus != ProcessStatus.DONE) {
-					return intStatus;
+				if (bb.remaining() < Integer.BYTES) {
+					return ProcessStatus.REFILL;
 				}
-				size = intReader.get();
+				size = bb.getInt();
+				if (size <= 0 || size > 1024) {
+					return ProcessStatus.ERROR;
+				}
 				state = State.WAITING_STRING;
 			}
 			
@@ -48,6 +50,7 @@ public class StringReader implements Reader<String> {
 					return ProcessStatus.REFILL;
 				}
 				int oldLimit = bb.limit();
+				bb.limit(bb.position() + size);
 				msg = StandardCharsets.UTF_8.decode(bb).toString();
 				bb.limit(oldLimit);
 				state = State.DONE;
@@ -63,11 +66,12 @@ public class StringReader implements Reader<String> {
 	}
 
 	@Override
-	public String get() {
+	public Frame get() {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		return msg;
+//		juste pour tester un echo
+		return new MessageFrame(msg);
 	}
 
 	@Override

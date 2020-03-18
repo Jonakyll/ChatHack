@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 
 public class TestFrame implements Frame {
 	
-	private byte b;
+	private final byte b;
 	
 	public TestFrame(byte b) {
 		this.b = b;

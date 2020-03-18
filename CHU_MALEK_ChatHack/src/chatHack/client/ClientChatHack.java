@@ -1,7 +1,6 @@
 package chatHack.client;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -10,23 +9,33 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
+
+import chatHack.frame.Frame;
+import chatHack.reader.Reader;
+import chatHack.reader.StringReader;
 
 public class ClientChatHack {
 
 	private static int BUFFER_SIZE = 1_024;
 	private static Logger logger = Logger.getLogger(ClientChatHack.class.getName());
 
-	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
-	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
+	private final ByteBuffer bbin = ByteBuffer.allocateDirect(BUFFER_SIZE);
+	private final ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
 	private final SocketChannel sc;
 	private final SocketAddress socketAddress;
 	private final Selector selector;
 	private SelectionKey uniqueKey;
 	private boolean closed = false;
 
-	private Thread clientThread;
 	private Thread readThread;
+
+	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
+
+	private final Reader<Frame> reader = new StringReader(bbin);
 
 	public ClientChatHack(SocketAddress socketAddress) throws IOException {
 		this.sc = SocketChannel.open();
@@ -35,54 +44,73 @@ public class ClientChatHack {
 	}
 
 	public void launch() throws IOException {
-		clientThread = new Thread(() -> {
+		sc.configureBlocking(false);
+		sc.connect(socketAddress);
+		uniqueKey = sc.register(selector, SelectionKey.OP_CONNECT);
 
-			try {
-				sc.configureBlocking(false);
-				sc.connect(socketAddress);
-				uniqueKey = sc.register(selector, SelectionKey.OP_CONNECT);
+		System.out.println("Connected to: " + socketAddress.toString());
+		Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
-				System.out.println("Connected to: " + socketAddress.toString());
-				while (!Thread.interrupted()) {
+		while (!Thread.interrupted()) {
 
-					try {
-						selector.select(this::treatKey);
-					} catch (UncheckedIOException tunneled) {
-						throw tunneled.getCause();
-					}
-				}
-			} catch (IOException e) {
-				return;
-			}
-		});
-		clientThread.start();
+			//			try {
+			//				processOut();
+			//				updateInterestOps();
+			//				selector.select(this::treatKey);
+			//
+			//
+			//			} catch (UncheckedIOException tunneled) {
+			//				throw tunneled.getCause();
+			//			}
+
+			selector.select();
+			processOut();
+			updateInterestOps();
+			processSelectedKeys(selectedKeys);
+			selectedKeys.clear();
+		}
 	}
 
-	private void treatKey(SelectionKey key) {
-
-		try {
-
+	private void processSelectedKeys(Set<SelectionKey> selectedKeys) throws IOException {
+		for (SelectionKey key : selectedKeys) {
 			if (key.isValid() && key.isConnectable()) {
 				doConnect();
 			}
-		} catch (IOException ioe) {
-			throw new UncheckedIOException(ioe);
-		}
-
-		try {
-
 			if (key.isValid() && key.isWritable()) {
 				doWrite();
 			}
-
 			if (key.isValid() && key.isReadable()) {
 				doRead();
 			}
-		} catch (IOException e) {
-			logger.info("Connection closed with client due to IOException");
-			silentlyClose();
 		}
 	}
+
+	//	private void treatKey(SelectionKey key) {
+	//
+	//		try {
+	//
+	//			if (key.isValid() && key.isConnectable()) {
+	//				doConnect();
+	//			}
+	//		} catch (IOException ioe) {
+	//			throw new UncheckedIOException(ioe);
+	//		}
+	//
+	//		try {
+	//
+	//			if (key.isValid() && key.isWritable()) {
+	//				doWrite();
+	//			}
+	//
+	//			if (key.isValid() && key.isReadable()) {
+	//				System.out.println("wesh");
+	//				doRead();
+	//			}
+	//		} catch (IOException e) {
+	//			logger.info("Connection closed with client due to IOException");
+	//			silentlyClose();
+	//		}
+	//	}
 
 	private void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -96,6 +124,7 @@ public class ClientChatHack {
 		sc.write(bbout);
 		bbout.compact();
 
+		processOut();
 		updateInterestOps();
 	}
 
@@ -109,13 +138,47 @@ public class ClientChatHack {
 	}
 
 	private void processIn() {
-		bbin.flip();
+		for (;;) {
+			Reader.ProcessStatus status = reader.process();
 
-		while (bbin.hasRemaining()) {
-			System.out.println(bbin.get());
+			switch (status) {
+			case DONE:
+				Frame frame = (Frame) reader.get();
+				
+				ByteBuffer buff = frame.toByteBuffer();
+				System.out.println(buff.getInt() + " " + StandardCharsets.UTF_8.decode(buff));
+				
+				reader.reset();
+				break;
+
+			case REFILL:
+				return;
+
+			case ERROR:
+				silentlyClose();
+				return;
+			}
 		}
 
-		bbin.compact();
+		//		bbin.flip();
+		//
+		//		while (bbin.hasRemaining()) {
+		//			System.out.println(StandardCharsets.UTF_8.decode(ByteBuffer.allocate(Byte.BYTES).put(bbin.get()).flip()).toString());
+		//		}
+		//
+		//		bbin.compact();
+	}
+
+	private void queueFrame(Frame frame) {
+		queue.add(frame.toByteBuffer());
+		processOut();
+		updateInterestOps();
+	}
+
+	private void processOut() {
+		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
+			bbout.put(queue.poll());
+		}
 	}
 
 	private void updateInterestOps() {
@@ -153,13 +216,17 @@ public class ClientChatHack {
 					while (scan.hasNextLine()) {
 						line = scan.nextLine();
 						ByteBuffer bb = StandardCharsets.UTF_8.encode(line);
+						ByteBuffer buff = ByteBuffer.allocate(Integer.BYTES + bb.remaining());
 
-						while (bbout.remaining() >= Byte.BYTES && bb.remaining() >= Byte.BYTES) {
-							bbout.put(bb.get());
-							selector.wakeup();
-						}
+						buff.putInt(bb.remaining());
+						buff.put(bb);
+						buff.flip();
 
+						queue.put(buff);
+						selector.wakeup();
 					}
+				} catch (InterruptedException e) {
+					return;
 				}
 			}
 		});

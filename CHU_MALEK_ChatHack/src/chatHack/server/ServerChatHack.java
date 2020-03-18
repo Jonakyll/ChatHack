@@ -20,6 +20,7 @@ import chatHack.frame.Frame;
 import chatHack.frame.TestFrame;
 import chatHack.reader.LogReader;
 import chatHack.reader.Reader;
+import chatHack.reader.StringReader;
 
 public class ServerChatHack {
 
@@ -32,8 +33,9 @@ public class ServerChatHack {
 		private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
 		private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
 		
-		private final Queue<Frame> queue = new LinkedList<>();
-		private Reader reader;
+		private final Queue<ByteBuffer> queue = new LinkedList<>();
+//		private Reader reader;
+		private Reader<Frame> reader = new StringReader(bbin);
 		
 		private Context(ServerChatHack server, SelectionKey key) {
 			this.key = key;
@@ -44,67 +46,61 @@ public class ServerChatHack {
 		private void processIn() {
 //			checkOpcode();
 //			
-//			for (;;) {
-//				Reader.ProcessStatus status = reader.process();
-//				
-//				switch(status) {
-//				case DONE: {
-//					Frame frame = (Frame) reader.get();
-//					server.broadcast(frame);
-//					reader.reset();
-//					break;
-//				}
-//				
-//				case REFILL:
-//					return;
-//				
-//				case ERROR:
-//					silentlyClose();
-//					return;
-//				}
-//			}
-			
-			bbin.flip();
-			while (bbin.hasRemaining()) {
-				server.broadcast(new TestFrame(bbin.get()));
+			for (;;) {
+				Reader.ProcessStatus status = reader.process();
+				
+				switch(status) {
+				case DONE: {
+					Frame frame = (Frame) reader.get();
+					server.broadcast(frame);
+					reader.reset();
+					break;
+				}
+				
+				case REFILL:
+					return;
+				
+				case ERROR:
+					silentlyClose();
+					return;
+				}
 			}
-			bbin.compact();
 		}
 		
-		private void checkOpcode() {
-			byte opcode = bbin.get();
-			
-			switch (opcode) {
-			case 0: {
-				reader = new LogReader(bbin);
-				return;
-			}
-			case 1: {
-				return;
-			}
-			case 2: {
-				return;
-			}
-			case 3: {
-				return;
-			}
-			default: {
-//				envoyer un message d'erreur a l'expediteur?
-				
-				return;
-			}
-			}
-		}
+//		private void checkOpcode() {
+//			byte opcode = bbin.get();
+//			
+//			switch (opcode) {
+//			case 0: {
+//				reader = new LogReader(bbin);
+//				return;
+//			}
+//			case 1: {
+//				return;
+//			}
+//			case 2: {
+//				return;
+//			}
+//			case 3: {
+//				return;
+//			}
+//			default: {
+////				envoyer un message d'erreur a l'expediteur?
+//				
+//				return;
+//			}
+//			}
+//		}
 
 		private void queueFrame(Frame frame) {
-			queue.add(frame);
+			queue.add(frame.toByteBuffer());
 			processOut();
 			updateInterestOps();
 		}
 
 		private void processOut() {
-			while (bbout.remaining() >= queue.peek().toByteBuffer().remaining() && !queue.isEmpty()) {
-				bbout.put(queue.poll().toByteBuffer());
+			while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
+				bbout.put(queue.poll());
 			}
 		}
 
@@ -142,7 +138,6 @@ public class ServerChatHack {
 		}
 
 		public void doRead() throws IOException {
-			System.out.println("wesh j'ai lu");
 			if (sc.read(bbin) == -1) {
 				closed = true;
 			}

@@ -56,7 +56,14 @@ public class LogReader implements Reader<Frame> {
 				return nameStatus;
 			}
 			name = nameReader.get();
-			state = State.WAITING_PASSWORD;
+			
+			if (code == 0) {
+				state = State.WAITING_PASSWORD;
+			}
+			else if (code == 1) {
+				state = State.DONE;
+				return ProcessStatus.DONE;
+			}
 		}
 		
 		case WAITING_PASSWORD: {
@@ -81,12 +88,14 @@ public class LogReader implements Reader<Frame> {
 		}
 		
 		switch (code) {
-		case '0':
+		case 0:
+//			juste pour verifier que ça marche mais pas necessaire
 			return new LogWithPwdFrame(name, password);
-		case '1':
+		case 1:
+//			juste pour verifier que ça marche mais pas necessaire
 			return new LogNoPwdFrame(name);
 		default:
-			return new LogErrFrame();
+			return new LogErrFrame("log error");
 		}
 	} 
 

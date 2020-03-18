@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
+import chatHack.reader.GlobalMsgReader;
 import chatHack.reader.LogReader;
 import chatHack.reader.Reader;
 
@@ -73,6 +74,7 @@ public class ServerChatHack {
 				return;
 			}
 			case '1': {
+				reader = new GlobalMsgReader(bbin);
 				return;
 			}
 			case '2': {

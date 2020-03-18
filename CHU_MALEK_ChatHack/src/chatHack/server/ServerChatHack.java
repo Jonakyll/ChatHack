@@ -19,6 +19,8 @@ import java.util.logging.Logger;
 import chatHack.frame.Frame;
 import chatHack.reader.GlobalMsgReader;
 import chatHack.reader.LogReader;
+import chatHack.reader.PrivateMsgCnxAcceptedFromDstReader;
+import chatHack.reader.PrivateMsgCnxReader;
 import chatHack.reader.Reader;
 
 public class ServerChatHack {
@@ -31,10 +33,10 @@ public class ServerChatHack {
 		private boolean closed = false;
 		private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
 		private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
-		
+
 		private final Queue<Frame> queue = new LinkedList<>();
 		private Reader reader;
-		
+
 		private Context(ServerChatHack server, SelectionKey key) {
 			this.key = key;
 			this.sc = (SocketChannel) key.channel();
@@ -43,10 +45,10 @@ public class ServerChatHack {
 
 		private void processIn() {
 			checkOpcode();
-			
+
 			for (;;) {
 				Reader.ProcessStatus status = reader.process();
-				
+
 				switch(status) {
 				case DONE: {
 					Frame frame = (Frame) reader.get();
@@ -54,38 +56,52 @@ public class ServerChatHack {
 					reader.reset();
 					break;
 				}
-				
+
 				case REFILL:
 					return;
-				
+
 				case ERROR:
 					silentlyClose();
 					return;
 				}
 			}
 		}
-		
+
 		private void checkOpcode() {
 			byte opcode = bbin.get();
-			
+
 			switch (opcode) {
-			case '0': {
+			case 0: {
 				reader = new LogReader(bbin);
 				return;
 			}
-			case '1': {
+			case 1: {
 				reader = new GlobalMsgReader(bbin);
 				return;
 			}
-			case '2': {
-				return;
+			case 2: {
+				byte step = bbin.get();
+
+				switch (step) {
+				case 0:
+					reader = new PrivateMsgCnxReader(bbin);
+					return;
+
+				case 1:
+					reader = new PrivateMsgCnxAcceptedFromDstReader(bbin);
+					return;
+
+				default:
+					//					envoyer un message d'erreur a l'expediteur?
+					return;
+				}
 			}
+			
 			case '3': {
 				return;
 			}
 			default: {
-//				envoyer un message d'erreur a l'expediteur?
-				
+				//				envoyer un message d'erreur a l'expediteur?
 				return;
 			}
 			}
@@ -131,7 +147,7 @@ public class ServerChatHack {
 			bbout.flip();
 			sc.write(bbout);
 			bbout.compact();
-			
+
 			processOut();
 			updateInterestOps();
 		}
@@ -140,7 +156,7 @@ public class ServerChatHack {
 			if (sc.read(bbin) == -1) {
 				closed = true;
 			}
-			
+
 			processIn();
 			updateInterestOps();
 		}
@@ -166,7 +182,7 @@ public class ServerChatHack {
 		while (!Thread.interrupted()) {
 			printKeys();
 			System.out.println("Starting select");
-			
+
 			try {
 				selector.select(this::treatKey);
 			} catch (UncheckedIOException tunneled) {
@@ -178,7 +194,7 @@ public class ServerChatHack {
 
 	private void treatKey(SelectionKey key) {
 		printSelectedKey(key);
-		
+
 		try {
 			if (key.isValid() && key.isAcceptable()) {
 				doAccept(key);
@@ -243,7 +259,7 @@ public class ServerChatHack {
 	private static void usage() {
 		System.out.println("Usage : ServerSumBetter port");
 	}
-	
+
 	/***
 	 * Theses methods are here to help understanding the behavior of the selector
 	 ***/

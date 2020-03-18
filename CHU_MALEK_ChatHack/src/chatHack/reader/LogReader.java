@@ -64,6 +64,7 @@ public class LogReader implements Reader<Frame> {
 				state = State.DONE;
 				return ProcessStatus.DONE;
 			}
+//			tester le cas d'erreur
 		}
 		
 		case WAITING_PASSWORD: {

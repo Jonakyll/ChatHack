@@ -15,6 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
+import chatHack.reader.LogReader;
 import chatHack.reader.Reader;
 import chatHack.reader.StringReader;
 
@@ -34,8 +35,8 @@ public class ClientChatHack {
 	private Thread readThread;
 
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
-
-	private final Reader<Frame> reader = new StringReader(bbin);
+	private Reader reader;
+//	private final Reader<Frame> reader = new LogReader(bbin);
 
 	public ClientChatHack(SocketAddress socketAddress) throws IOException {
 		this.sc = SocketChannel.open();
@@ -138,6 +139,8 @@ public class ClientChatHack {
 	}
 
 	private void processIn() {
+		checkOpcode();
+		
 		for (;;) {
 			Reader.ProcessStatus status = reader.process();
 
@@ -145,8 +148,11 @@ public class ClientChatHack {
 			case DONE:
 				Frame frame = (Frame) reader.get();
 				
-				ByteBuffer buff = frame.toByteBuffer();
-				System.out.println(buff.getInt() + " " + StandardCharsets.UTF_8.decode(buff));
+//				System.out.println("wesh");
+//				ByteBuffer buff = frame.toByteBuffer();
+//				System.out.println(StandardCharsets.UTF_8.decode(buff));
+				
+				System.out.println(frame);
 				
 				reader.reset();
 				break;
@@ -168,7 +174,41 @@ public class ClientChatHack {
 		//
 		//		bbin.compact();
 	}
+	
+	private void checkOpcode() {
+		bbin.flip();
+		if (bbin.remaining() >= Byte.BYTES) {
 
+			byte opcode = bbin.get();
+			System.out.println("opcode " + opcode);
+
+			switch (opcode) {
+			case 0: {
+				break;
+			}
+			case 1: {
+				break;
+			}
+			case 2: {
+				break;
+			}
+			case 3: {
+				break;
+			}
+			case 4: {
+//				reader = new LogReader(bbin);
+				break;
+			}
+			default: {
+				//				envoyer un message d'erreur a l'expediteur?
+
+				break;
+			}
+			}
+		}
+		bbin.compact();
+	}
+	
 	private void queueFrame(Frame frame) {
 		queue.add(frame.toByteBuffer());
 		processOut();
@@ -215,11 +255,17 @@ public class ClientChatHack {
 
 					while (scan.hasNextLine()) {
 						line = scan.nextLine();
-						ByteBuffer bb = StandardCharsets.UTF_8.encode(line);
-						ByteBuffer buff = ByteBuffer.allocate(Integer.BYTES + bb.remaining());
+						
+						ByteBuffer pseudoBuff = StandardCharsets.UTF_8.encode(line);
+						ByteBuffer mdpBuff = StandardCharsets.UTF_8.encode(line);
+						ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + pseudoBuff.remaining() + mdpBuff.remaining());
 
-						buff.putInt(bb.remaining());
-						buff.put(bb);
+						buff.put((byte) 0);
+						buff.put((byte) 0);
+						buff.putInt(pseudoBuff.remaining());
+						buff.put(pseudoBuff);
+						buff.putInt(mdpBuff.remaining());
+						buff.put(mdpBuff);
 						buff.flip();
 
 						queue.put(buff);

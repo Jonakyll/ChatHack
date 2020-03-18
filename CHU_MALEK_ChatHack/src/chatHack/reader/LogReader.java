@@ -6,6 +6,8 @@ import chatHack.frame.Frame;
 import chatHack.frame.LogErrFrame;
 import chatHack.frame.LogNoPwdFrame;
 import chatHack.frame.LogWithPwdFrame;
+import chatHack.frame.MessageFrame;
+import chatHack.frame.TestFrame;
 
 public class LogReader implements Reader<Frame> {
 	
@@ -57,6 +59,7 @@ public class LogReader implements Reader<Frame> {
 			}
 			name = nameReader.get();
 			state = State.WAITING_PASSWORD;
+			
 		}
 		
 		case WAITING_PASSWORD: {
@@ -80,18 +83,23 @@ public class LogReader implements Reader<Frame> {
 			throw new IllegalStateException();
 		}
 		
-		switch (code) {
-		case 0:
-			return new LogWithPwdFrame(name, password);
-		case 1:
-			return new LogNoPwdFrame(name);
-		default:
-			return new LogErrFrame();
-		}
+		return new LogErrFrame("log error");
+
+//		switch (code) {
+//		case 0:
+//			return new LogWithPwdFrame(name, password);
+//		case 1:
+//			return new LogNoPwdFrame(name);
+//		default:
+//			return new LogErrFrame();
+//		}
 	} 
 
 	@Override
 	public void reset() {
+		codeReader.reset();
+		nameReader.reset();
+		passwordReader.reset();
 		state = State.WAITING_CODE;
 	}
 

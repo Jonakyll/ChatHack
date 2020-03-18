@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import chatHack.frame.Frame;
 import chatHack.frame.MessageFrame;
 
-public class StringReader implements Reader<Frame> {
+public class StringReader implements Reader<String> {
 
 	private enum State {
 		DONE,
@@ -39,9 +39,10 @@ public class StringReader implements Reader<Frame> {
 					return ProcessStatus.REFILL;
 				}
 				size = bb.getInt();
-				if (size <= 0 || size > 1024) {
-					return ProcessStatus.ERROR;
-				}
+//				if (size <= 0 || size > 1024) {
+//					System.out.println(size);
+//					return ProcessStatus.ERROR;
+//				}
 				state = State.WAITING_STRING;
 			}
 			
@@ -66,12 +67,14 @@ public class StringReader implements Reader<Frame> {
 	}
 
 	@Override
-	public Frame get() {
+	public String get() {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
+		return msg;
+		
 //		juste pour tester un echo
-		return new MessageFrame(msg);
+//		return new MessageFrame(msg);
 	}
 
 	@Override

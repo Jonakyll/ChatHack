@@ -17,6 +17,8 @@ import java.util.logging.Logger;
 import chatHack.frame.Frame;
 import chatHack.reader.ErrReader;
 import chatHack.reader.GlobalMsgReader;
+import chatHack.reader.LogOutToClientReader;
+import chatHack.reader.LogOutToServerReader;
 import chatHack.reader.PrivateMsgCnxReader;
 import chatHack.reader.PrivateMsgCnxResToClientReader;
 import chatHack.reader.Reader;
@@ -187,6 +189,7 @@ public class ClientChatHack {
 				break;
 
 			case 3:
+				reader = new LogOutToClientReader(bbin);
 				break;
 
 			case 4:
@@ -214,6 +217,9 @@ public class ClientChatHack {
 
 			case 1:
 				reader = new PrivateMsgCnxResToClientReader(bbin);
+				break;
+				
+			case 2:
 				break;
 
 			default:
@@ -272,23 +278,16 @@ public class ClientChatHack {
 						
 						line = scan.nextLine();
 
-						ByteBuffer pseudoBuff = StandardCharsets.UTF_8.encode(line);
-//						ByteBuffer mdpBuff = StandardCharsets.UTF_8.encode(line);
-						ByteBuffer buff = ByteBuffer.allocate(8 * Byte.BYTES + Integer.BYTES + Long.BYTES);
-
-						buff.put((byte) 2);
+						ByteBuffer buff = ByteBuffer.allocate(19 * Byte.BYTES);
+						
+						buff.put((byte) 3);
 						buff.put((byte) 1);
-						buff.put((byte) 0);
-						buff.putInt(4545);
-						buff.putLong(371321352);
 						buff.put((byte) 4);
-//						buff.putInt(mdpBuff.remaining());
-//						buff.put(mdpBuff);
 						
 						buff.put((byte) 000);
-						buff.put((byte) 000);
-						buff.put((byte) 000);
-						buff.put((byte) 000);
+						buff.put((byte) 111);
+						buff.put((byte) 222);
+						buff.put((byte) 333);
 						
 						buff.flip();
 

@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
 import chatHack.reader.GlobalMsgReader;
+import chatHack.reader.LogOutToServerReader;
 import chatHack.reader.LogReader;
 import chatHack.reader.PrivateMsgCnxResToServerReader;
 import chatHack.reader.PrivateMsgCnxReader;
@@ -92,6 +93,7 @@ public class ServerChatHack {
 						break;
 
 					case 3:
+						reader = new LogOutToServerReader(bbin);
 						break;
 
 					default:

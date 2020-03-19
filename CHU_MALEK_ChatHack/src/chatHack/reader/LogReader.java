@@ -3,7 +3,7 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
-import chatHack.frame.LogErrFrame;
+import chatHack.frame.ErrFrame;
 import chatHack.frame.LogNoPwdFrame;
 import chatHack.frame.LogWithPwdFrame;
 import chatHack.frame.MessageFrame;
@@ -90,7 +90,7 @@ public class LogReader implements Reader<Frame> {
 			throw new IllegalStateException();
 		}
 
-		return new LogErrFrame("log error");
+		return new ErrFrame("log error");
 		
 //		switch (code) {
 //		case 0:

@@ -2,6 +2,7 @@ package chatHack.reader;
 
 import java.nio.ByteBuffer;
 
+import chatHack.frame.ErrFrame;
 import chatHack.frame.Frame;
 
 public class ErrReader implements Reader<Frame> {
@@ -49,11 +50,12 @@ public class ErrReader implements Reader<Frame> {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		return null;
+		return new ErrFrame(msg);
 	}
 
 	@Override
 	public void reset() {
+		msgReader.reset();
 		state = State.WAITING;
 	}
 

@@ -15,9 +15,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
-import chatHack.reader.LogReader;
+import chatHack.reader.ErrReader;
 import chatHack.reader.Reader;
-import chatHack.reader.StringReader;
 
 public class ClientChatHack {
 
@@ -35,7 +34,7 @@ public class ClientChatHack {
 	private Thread readThread;
 
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
-	private Reader reader;
+	private Reader<Frame> reader;
 	//	private final Reader<Frame> reader = new LogReader(bbin);
 
 	public ClientChatHack(SocketAddress socketAddress) throws IOException {
@@ -148,11 +147,8 @@ public class ClientChatHack {
 			case DONE:
 				Frame frame = (Frame) reader.get();
 
-				//				System.out.println("wesh");
-				//				ByteBuffer buff = frame.toByteBuffer();
-				//				System.out.println(StandardCharsets.UTF_8.decode(buff));
-
-				System.out.println(frame);
+//				queueFrame(frame);
+				logger.info(frame.toString());
 
 				reader.reset();
 				break;
@@ -165,18 +161,11 @@ public class ClientChatHack {
 				return;
 			}
 		}
-
-		//		bbin.flip();
-		//
-		//		while (bbin.hasRemaining()) {
-		//			System.out.println(StandardCharsets.UTF_8.decode(ByteBuffer.allocate(Byte.BYTES).put(bbin.get()).flip()).toString());
-		//		}
-		//
-		//		bbin.compact();
 	}
 
 	private void checkOpcode() {
 		bbin.flip();
+		
 		if (bbin.remaining() >= Byte.BYTES) {
 
 			byte opcode = bbin.get();
@@ -196,7 +185,7 @@ public class ClientChatHack {
 				break;
 
 			case 4:
-				reader = new LogReader(bbin);
+				reader = new ErrReader(bbin);
 				break;
 
 			default:
@@ -207,11 +196,11 @@ public class ClientChatHack {
 		bbin.compact();
 	}
 
-	private void queueFrame(Frame frame) {
-		queue.add(frame.toByteBuffer());
-		processOut();
-		updateInterestOps();
-	}
+//	private void queueFrame(Frame frame) {
+//		queue.add(frame.toByteBuffer());
+//		processOut();
+//		updateInterestOps();
+//	}
 
 	private void processOut() {
 		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
@@ -290,6 +279,6 @@ public class ClientChatHack {
 	}
 
 	private static void usage() {
-		System.out.println("Usage : socketAddress port");
+		logger.info("Usage : socketAddress port");
 	}
 }

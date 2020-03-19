@@ -3,11 +3,11 @@ package chatHack.frame;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class LogErrFrame implements Frame {
+public class ErrFrame implements Frame {
 	
 	private final String msg;
 	
-	public LogErrFrame(String msg) {
+	public ErrFrame(String msg) {
 		this.msg = msg;
 	}
 	
@@ -22,6 +22,11 @@ public class LogErrFrame implements Frame {
 		buff.flip();
 		
 		return buff;
+	}
+	
+	@Override
+	public String toString() {
+		return "ERROR: " + msg;
 	}
 
 }

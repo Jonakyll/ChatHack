@@ -1,22 +1,35 @@
 package chatHack.frame;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class PrivateMsgCnxRefusedToClientFrame implements Frame {
 
-	public PrivateMsgCnxRefusedToClientFrame() {
+	private final String errMsg;
+
+	public PrivateMsgCnxRefusedToClientFrame(String errMsg) {
+		this.errMsg = errMsg;
 	}
-	
+
 	@Override
 	public ByteBuffer toByteBuffer() {
-		ByteBuffer buff = ByteBuffer.allocate(3 * Byte.BYTES);
-		
+		ByteBuffer errMsgBuff = StandardCharsets.UTF_8.encode(errMsg);
+		ByteBuffer buff = ByteBuffer.allocate(3 * Byte.BYTES + Integer.BYTES + errMsgBuff.remaining());
+
 		buff.put((byte) 2);
 		buff.put((byte) 1);
 		buff.put((byte) 1);
+		buff.putInt(errMsgBuff.remaining());
+		buff.put(errMsgBuff);
 		buff.flip();
-		
+
 		return buff;
+	}
+	
+	@Override
+	public String toString() {
+		System.out.println("wesh");
+		return errMsg;
 	}
 
 }

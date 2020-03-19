@@ -3,9 +3,6 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import chatHack.frame.Frame;
-import chatHack.frame.MessageFrame;
-
 public class StringReader implements Reader<String> {
 
 	private enum State {
@@ -72,9 +69,6 @@ public class StringReader implements Reader<String> {
 			throw new IllegalStateException();
 		}
 		return msg;
-		
-//		juste pour tester un echo
-//		return new MessageFrame(msg);
 	}
 
 	@Override

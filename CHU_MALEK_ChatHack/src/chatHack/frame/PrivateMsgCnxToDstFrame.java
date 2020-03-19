@@ -26,5 +26,10 @@ public class PrivateMsgCnxToDstFrame implements Frame {
 		
 		return buff;
 	}
+	
+	@Override
+	public String toString() {
+		return dst + " wants to open a private channel with you.";
+	}
 
 }

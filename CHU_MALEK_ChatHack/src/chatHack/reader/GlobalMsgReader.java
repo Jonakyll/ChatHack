@@ -71,8 +71,9 @@ public class GlobalMsgReader implements Reader<Frame> {
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-		
+		expReader.reset();
+		msgReader.reset();
+		state = State.WAITING_EXP;
 	}
 
 }

@@ -16,6 +16,9 @@ import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
 import chatHack.reader.ErrReader;
+import chatHack.reader.GlobalMsgReader;
+import chatHack.reader.PrivateMsgCnxReader;
+import chatHack.reader.PrivateMsgCnxResToClientReader;
 import chatHack.reader.Reader;
 
 public class ClientChatHack {
@@ -148,8 +151,8 @@ public class ClientChatHack {
 				Frame frame = (Frame) reader.get();
 
 //				queueFrame(frame);
-				logger.info(frame.toString());
-
+				System.out.println(frame);
+				
 				reader.reset();
 				break;
 
@@ -176,9 +179,11 @@ public class ClientChatHack {
 				break;
 
 			case 1:
+				reader = new GlobalMsgReader(bbin);
 				break;
 
 			case 2:
+				checkStep();
 				break;
 
 			case 3:
@@ -194,6 +199,28 @@ public class ClientChatHack {
 			}
 		}
 		bbin.compact();
+	}
+	
+	private void checkStep() {
+		if (bbin.remaining() >= Byte.BYTES) {
+
+			byte step = bbin.get();
+			System.out.println("step " + step);
+
+			switch (step) {
+			case 0:
+				reader = new PrivateMsgCnxReader(bbin);
+				break;
+
+			case 1:
+				reader = new PrivateMsgCnxResToClientReader(bbin);
+				break;
+
+			default:
+				//					envoyer un message d'erreur a l'expediteur?
+				break;
+			}
+		}
 	}
 
 //	private void queueFrame(Frame frame) {
@@ -241,18 +268,28 @@ public class ClientChatHack {
 					String line;
 
 					while (scan.hasNextLine()) {
+//						il faut gerer tous les paquets possibles venant du client
+						
 						line = scan.nextLine();
 
 						ByteBuffer pseudoBuff = StandardCharsets.UTF_8.encode(line);
-						ByteBuffer mdpBuff = StandardCharsets.UTF_8.encode(line);
-						ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + pseudoBuff.remaining() + mdpBuff.remaining());
+//						ByteBuffer mdpBuff = StandardCharsets.UTF_8.encode(line);
+						ByteBuffer buff = ByteBuffer.allocate(8 * Byte.BYTES + Integer.BYTES + Long.BYTES);
 
+						buff.put((byte) 2);
+						buff.put((byte) 1);
 						buff.put((byte) 0);
-						buff.put((byte) 0);
-						buff.putInt(pseudoBuff.remaining());
-						buff.put(pseudoBuff);
-						buff.putInt(mdpBuff.remaining());
-						buff.put(mdpBuff);
+						buff.putInt(4545);
+						buff.putLong(371321352);
+						buff.put((byte) 4);
+//						buff.putInt(mdpBuff.remaining());
+//						buff.put(mdpBuff);
+						
+						buff.put((byte) 000);
+						buff.put((byte) 000);
+						buff.put((byte) 000);
+						buff.put((byte) 000);
+						
 						buff.flip();
 
 						queue.put(buff);

@@ -27,6 +27,11 @@ public class GlobalMsgFrame implements Frame {
 		buff.flip();
 		
 		return buff;
-	}	
+	}
+	
+	@Override
+	public String toString() {
+		return exp + ": " + msg;
+	}
 
 }

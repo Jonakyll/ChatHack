@@ -100,7 +100,7 @@ public class LogReader implements Reader<Frame> {
 //			//			juste pour verifier que ça marche mais pas necessaire
 //			return new LogNoPwdFrame(name);
 //		default:
-//			return new LogErrFrame("log error");
+//			return new ErrFrame("log error");
 //		}
 	} 
 

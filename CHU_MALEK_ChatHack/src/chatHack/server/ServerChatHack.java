@@ -17,8 +17,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
+import chatHack.reader.GlobalMsgReader;
 import chatHack.reader.LogReader;
-import chatHack.reader.PrivateMsgCnxAcceptedFromDstReader;
+import chatHack.reader.PrivateMsgCnxResToServerReader;
 import chatHack.reader.PrivateMsgCnxReader;
 import chatHack.reader.Reader;
 
@@ -70,35 +71,42 @@ public class ServerChatHack {
 		private void checkOpcode() {
 			bbin.flip();
 
-			if (bbin.remaining() >= Byte.BYTES) {
+			try {
 
-				byte opcode = bbin.get();
-				System.out.println("opcode " + opcode);
+				if (bbin.remaining() >= Byte.BYTES) {
 
-				switch (opcode) {
-				case 0:
-					reader = new LogReader(bbin);
-					break;
+					byte opcode = bbin.get();
+					System.out.println("opcode " + opcode);
 
-				case 1:
-					break;
+					switch (opcode) {
+					case 0:
+						reader = new LogReader(bbin);
+						break;
 
-				case 2:
-					checkStep();
-					break;
+					case 1:
+						reader = new GlobalMsgReader(bbin);
+						break;
 
-				case 3:
-					break;
-					
-				default:
-					//				envoyer un message d'erreur a l'expediteur?
-					break;
+					case 2:
+						checkStep();
+						break;
+
+					case 3:
+						break;
+
+					default:
+						//				envoyer un message d'erreur a l'expediteur?
+						break;
+					}
 				}
+			} finally {
+				bbin.compact();
+
 			}
-			bbin.compact();
 		}
 
 		private void checkStep() {
+
 			if (bbin.remaining() >= Byte.BYTES) {
 
 				byte step = bbin.get();
@@ -110,7 +118,7 @@ public class ServerChatHack {
 					break;
 
 				case 1:
-					reader = new PrivateMsgCnxAcceptedFromDstReader(bbin);
+					reader = new PrivateMsgCnxResToServerReader(bbin);
 					break;
 
 				default:

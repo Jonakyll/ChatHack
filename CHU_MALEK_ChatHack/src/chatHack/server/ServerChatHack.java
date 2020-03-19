@@ -17,10 +17,10 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
-import chatHack.frame.TestFrame;
 import chatHack.reader.LogReader;
+import chatHack.reader.PrivateMsgCnxAcceptedFromDstReader;
+import chatHack.reader.PrivateMsgCnxReader;
 import chatHack.reader.Reader;
-import chatHack.reader.StringReader;
 
 public class ServerChatHack {
 
@@ -69,33 +69,55 @@ public class ServerChatHack {
 
 		private void checkOpcode() {
 			bbin.flip();
+
 			if (bbin.remaining() >= Byte.BYTES) {
 
 				byte opcode = bbin.get();
 				System.out.println("opcode " + opcode);
 
 				switch (opcode) {
-				case 0: {
+				case 0:
 					reader = new LogReader(bbin);
 					break;
-				}
-				case 1: {
-					break;
-				}
-				case 2: {
-					break;
-				}
-				case 3: {
-					break;
-				}
-				default: {
-					//				envoyer un message d'erreur a l'expediteur?
 
+				case 1:
 					break;
-				}
+
+				case 2:
+					checkStep();
+					break;
+
+				case 3:
+					break;
+					
+				default:
+					//				envoyer un message d'erreur a l'expediteur?
+					break;
 				}
 			}
 			bbin.compact();
+		}
+
+		private void checkStep() {
+			if (bbin.remaining() >= Byte.BYTES) {
+
+				byte step = bbin.get();
+				System.out.println("step " + step);
+
+				switch (step) {
+				case 0:
+					reader = new PrivateMsgCnxReader(bbin);
+					break;
+
+				case 1:
+					reader = new PrivateMsgCnxAcceptedFromDstReader(bbin);
+					break;
+
+				default:
+					//					envoyer un message d'erreur a l'expediteur?
+					break;
+				}
+			}
 		}
 
 		private void queueFrame(Frame frame) {

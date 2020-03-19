@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 public class LogErrFrame implements Frame {
-
+	
 	private final String msg;
 	
 	public LogErrFrame(String msg) {

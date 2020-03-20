@@ -1,8 +1,5 @@
 package chatHack.frame;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
 import chatHack.visitor.FrameVisitor;
 
 public class GlobalMsgFrame implements Frame {
@@ -15,21 +12,20 @@ public class GlobalMsgFrame implements Frame {
 		this.msg = msg;
 	}
 	
-	@Override
-	public ByteBuffer toByteBuffer() {
-		ByteBuffer expBuff = StandardCharsets.UTF_8.encode(exp);
-		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
-		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + expBuff.remaining() + msgBuff.remaining());
-		
-		buff.put((byte) 1);
-		buff.putInt(expBuff.remaining());
-		buff.put(expBuff);
-		buff.putInt(msgBuff.remaining());
-		buff.put(msgBuff);
-		buff.flip();
-		
-		return buff;
-	}
+//	public ByteBuffer toByteBuffer() {
+//		ByteBuffer expBuff = StandardCharsets.UTF_8.encode(exp);
+//		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
+//		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + expBuff.remaining() + msgBuff.remaining());
+//		
+//		buff.put((byte) 1);
+//		buff.putInt(expBuff.remaining());
+//		buff.put(expBuff);
+//		buff.putInt(msgBuff.remaining());
+//		buff.put(msgBuff);
+//		buff.flip();
+//		
+//		return buff;
+//	}
 	
 	@Override
 	public String toString() {
@@ -38,8 +34,15 @@ public class GlobalMsgFrame implements Frame {
 
 	@Override
 	public void accept(FrameVisitor visitor) {
-		// TODO Auto-generated method stub
-		
+		visitor.visitGlobalMsgFrame(this);
+	}
+	
+	public String getExp() {
+		return exp;
+	}
+	
+	public String getMsg() {
+		return msg;
 	}
 
 }

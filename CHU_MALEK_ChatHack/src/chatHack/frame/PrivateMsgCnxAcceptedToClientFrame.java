@@ -22,26 +22,25 @@ public class PrivateMsgCnxAcceptedToClientFrame implements Frame {
 		this.ip = ip;
 	}
 
-	@Override
-	public ByteBuffer toByteBuffer() {
-		ipBuff = ByteBuffer.allocate(ipVersion * Byte.BYTES);
-		
-		ip.forEach(i -> ipBuff.put(i));
-		ipBuff.flip();
-		
-		ByteBuffer buff = ByteBuffer.allocate(4 * Byte.BYTES + Integer.BYTES + Long.BYTES + ipBuff.remaining());
-		
-		buff.put((byte) 2);
-		buff.put((byte) 1);
-		buff.put((byte) 0);
-		buff.putInt(port);
-		buff.putLong(token);
-		buff.put(ipVersion);
-		buff.put(ipBuff);
-		buff.flip();
-		
-		return buff;
-	}
+//	public ByteBuffer toByteBuffer() {
+//		ipBuff = ByteBuffer.allocate(ipVersion * Byte.BYTES);
+//		
+//		ip.forEach(i -> ipBuff.put(i));
+//		ipBuff.flip();
+//		
+//		ByteBuffer buff = ByteBuffer.allocate(4 * Byte.BYTES + Integer.BYTES + Long.BYTES + ipBuff.remaining());
+//		
+//		buff.put((byte) 2);
+//		buff.put((byte) 1);
+//		buff.put((byte) 0);
+//		buff.putInt(port);
+//		buff.putLong(token);
+//		buff.put(ipVersion);
+//		buff.put(ipBuff);
+//		buff.flip();
+//		
+//		return buff;
+//	}
 	
 	@Override
 	public String toString() {
@@ -63,8 +62,23 @@ public class PrivateMsgCnxAcceptedToClientFrame implements Frame {
 
 	@Override
 	public void accept(FrameVisitor visitor) {
-		// TODO Auto-generated method stub
-		
+		visitor.visitPrivateMsgCnxAcceptedToClientFrame(this);
+	}
+	
+	public byte getIpVersion() {
+		return ipVersion;
+	}
+	
+	public List<Byte> getIp() {
+		return ip;
+	}
+	
+	public int getPort() {
+		return port;
+	}
+	
+	public long getToken() {
+		return token;
 	}
 	
 }

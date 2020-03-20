@@ -1,8 +1,5 @@
 package chatHack.frame;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
 import chatHack.visitor.FrameVisitor;
 
 public class PrivateMsgCnxToDstFrame implements Frame {
@@ -15,19 +12,18 @@ public class PrivateMsgCnxToDstFrame implements Frame {
 		this.dst = dst;
 	}
 
-	@Override
-	public ByteBuffer toByteBuffer() {
-		ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(dst);
-		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + dstBuff.remaining());
-		
-		buff.put((byte) 2);
-		buff.put(step);
-		buff.putInt(dstBuff.remaining());
-		buff.put(dstBuff);
-		buff.flip();
-		
-		return buff;
-	}
+//	public ByteBuffer toByteBuffer() {
+//		ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(dst);
+//		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + dstBuff.remaining());
+//		
+//		buff.put((byte) 2);
+//		buff.put(step);
+//		buff.putInt(dstBuff.remaining());
+//		buff.put(dstBuff);
+//		buff.flip();
+//		
+//		return buff;
+//	}
 	
 	@Override
 	public String toString() {
@@ -36,8 +32,14 @@ public class PrivateMsgCnxToDstFrame implements Frame {
 
 	@Override
 	public void accept(FrameVisitor visitor) {
-		// TODO Auto-generated method stub
-		
+		visitor.visitPrivateMsgCnxToDstFrame(this);
 	}
 
+	public String getDst() {
+		return dst;
+	}
+	
+	public byte getStep() {
+		return step;
+	}
 }

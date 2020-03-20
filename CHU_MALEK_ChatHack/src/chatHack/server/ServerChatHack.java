@@ -11,132 +11,13 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
-import chatHack.reader.FrameToServerReader;
-import chatHack.reader.GlobalMsgReader;
-import chatHack.reader.LogOutToServerReader;
-import chatHack.reader.LogReader;
-import chatHack.reader.PrivateMsgCnxResToServerReader;
-import chatHack.reader.PrivateMsgCnxReader;
-import chatHack.reader.Reader;
 
 public class ServerChatHack {
 
-	static private class Context {
-
-		private final SelectionKey key;
-		private final SocketChannel sc;
-		private final ServerChatHack server;
-		private boolean closed = false;
-		private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
-		private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
-
-		private final Queue<ByteBuffer> queue = new LinkedList<>();
-//		private Reader reader;
-		private Reader<Frame> reader = new FrameToServerReader(bbin);
-
-		private Context(ServerChatHack server, SelectionKey key) {
-			this.key = key;
-			this.sc = (SocketChannel) key.channel();
-			this.server = server;
-		}
-
-		private void processIn() {
-
-			for (;;) {
-				Reader.ProcessStatus status = reader.process();
-
-				switch (status) {
-				case DONE: {
-					Frame frame = (Frame) reader.get();
-//					ByteBuffer frameBuff = frame.toByteBuffer();
-//					byte opcode = frameBuff.get();
-
-//					if (opcode == 0 || opcode == 1) {
-//						server.sendToMDP(frame);
-//					}
-
-//					pour le chat global
-//					if (opcode == 2) {
-					server.broadcast(frame);
-//					}
-
-					reader.reset();
-					break;
-				}
-
-				case REFILL:
-					return;
-
-				case ERROR:
-					silentlyClose();
-					return;
-				}
-			}
-		}
-
-		private void queueFrame(Frame frame) {
-			queue.add(frame.toByteBuffer());
-			processOut();
-			updateInterestOps();
-		}
-
-		private void processOut() {
-			while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
-				bbout.put(queue.poll());
-			}
-		}
-
-		private void updateInterestOps() {
-			int ops = 0;
-
-			if (bbin.hasRemaining() && !closed) {
-				ops |= SelectionKey.OP_READ;
-			}
-			if (bbout.position() != 0) {
-				ops |= SelectionKey.OP_WRITE;
-			}
-			if (ops == 0) {
-				silentlyClose();
-			} else {
-				key.interestOps(ops);
-			}
-		}
-
-		private void silentlyClose() {
-			try {
-				sc.close();
-			} catch (IOException e) {
-
-			}
-		}
-
-		public void doWrite() throws IOException {
-			bbout.flip();
-			sc.write(bbout);
-			bbout.compact();
-
-			processOut();
-			updateInterestOps();
-		}
-
-		public void doRead() throws IOException {
-			if (sc.read(bbin) == -1) {
-				closed = true;
-			}
-
-			processIn();
-			updateInterestOps();
-		}
-
-	}
-
-	private static int BUFFER_SIZE = 1_024;
 	private static Logger logger = Logger.getLogger(ServerChatHack.class.getName());
 
 	private final ServerSocketChannel serverSocketChannel;
@@ -216,7 +97,7 @@ public class ServerChatHack {
 		}
 	}
 
-	private void broadcast(Frame frame) {
+	public void broadcast(ByteBuffer buff) {
 		for (SelectionKey key : selector.keys()) {
 
 			Context ctx = (Context) key.attachment();
@@ -224,7 +105,8 @@ public class ServerChatHack {
 			if (ctx == null) {
 				continue;
 			}
-			ctx.queueFrame(frame);
+			ctx.queueFrame(buff);
+			buff.flip();
 		}
 	}
 

@@ -1,8 +1,5 @@
 package chatHack.frame;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
 import chatHack.visitor.FrameVisitor;
 
 public class LogOutFrame implements Frame {
@@ -15,19 +12,18 @@ public class LogOutFrame implements Frame {
 		this.msg = msg;
 	}
 	
-	@Override
-	public ByteBuffer toByteBuffer() {
-		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
-		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + msgBuff.remaining());
-		
-		buff.put((byte) 3);
-		buff.put(logoutType);
-		buff.putInt(msgBuff.remaining());
-		buff.put(msgBuff);
-		buff.flip();
-		
-		return buff;
-	}
+//	public ByteBuffer toByteBuffer() {
+//		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
+//		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + msgBuff.remaining());
+//		
+//		buff.put((byte) 3);
+//		buff.put(logoutType);
+//		buff.putInt(msgBuff.remaining());
+//		buff.put(msgBuff);
+//		buff.flip();
+//		
+//		return buff;
+//	}
 	
 	@Override
 	public String toString() {
@@ -36,8 +32,15 @@ public class LogOutFrame implements Frame {
 
 	@Override
 	public void accept(FrameVisitor visitor) {
-		// TODO Auto-generated method stub
-		
+		visitor.visitLogOutFrame(this);
+	}
+	
+	public byte getLogoutType() {
+		return logoutType;
+	}
+	
+	public String getMsg() {
+		return msg;
 	}
 
 }

@@ -158,7 +158,6 @@ public class ClientChatHack {
 			switch (status) {
 			case DONE:
 				Frame frame = (Frame) reader.get();
-
 				// queueFrame(frame);
 				System.out.println(frame);
 
@@ -223,15 +222,14 @@ public class ClientChatHack {
 						// il faut gerer tous les paquets possibles venant du client
 
 						line = scan.nextLine();
-
+						
+						ByteBuffer sender = StandardCharsets.UTF_8.encode("JOJO");
 						ByteBuffer bb = StandardCharsets.UTF_8.encode(line);
-						ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + 2 * bb.remaining());
+						ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + bb.remaining() + sender.remaining());
 
-						buff.put((byte) 0);
-						buff.put((byte) 0);
-						buff.putInt(bb.remaining());
-						buff.put(bb);
-						bb.flip();
+						buff.put((byte) 1);
+						buff.putInt(sender.remaining());
+						buff.put(sender);
 						buff.putInt(bb.remaining());
 						buff.put(bb);
 

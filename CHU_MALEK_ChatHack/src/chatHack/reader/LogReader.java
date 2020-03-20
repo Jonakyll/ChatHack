@@ -41,7 +41,6 @@ public class LogReader implements Reader<Frame> {
 				return codeStatus;
 			}
 			code = codeReader.get();
-			System.out.println("code " + code);
 			state = State.WAITING_NAME;
 		}
 
@@ -51,7 +50,6 @@ public class LogReader implements Reader<Frame> {
 				return nameStatus;
 			}
 			name = nameReader.get();
-			System.out.println("name " + name);
 
 			if (code == 0) {
 				state = State.WAITING_PASSWORD;
@@ -68,7 +66,6 @@ public class LogReader implements Reader<Frame> {
 				return passwordStatus;
 			}
 			password = passwordReader.get();
-			System.out.println("password " + password);
 			state = State.DONE;
 			return ProcessStatus.DONE;
 		}

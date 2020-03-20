@@ -93,8 +93,6 @@ public class ServerChatHack {
 		}
 
 		private void updateInterestOps() {
-			System.out.println("bbin " + bbin.remaining());
-			System.out.println("bbout " + bbout.remaining());
 			int ops = 0;
 
 			if (bbin.hasRemaining() && !closed) {

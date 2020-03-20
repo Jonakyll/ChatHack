@@ -3,20 +3,23 @@ package chatHack.frame;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class ErrFrame implements Frame {
-	
+public class LogOutFrame implements Frame {
+
+	private final byte logoutType;
 	private final String msg;
 	
-	public ErrFrame(String msg) {
+	public LogOutFrame(byte logoutType, String msg) {
+		this.logoutType = logoutType;
 		this.msg = msg;
 	}
 	
 	@Override
 	public ByteBuffer toByteBuffer() {
 		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
-		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + Integer.BYTES + msgBuff.remaining());
+		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + msgBuff.remaining());
 		
-		buff.put((byte) 4);
+		buff.put((byte) 3);
+		buff.put(logoutType);
 		buff.putInt(msgBuff.remaining());
 		buff.put(msgBuff);
 		buff.flip();
@@ -26,7 +29,7 @@ public class ErrFrame implements Frame {
 	
 	@Override
 	public String toString() {
-		return "ERROR: " + msg;
+		return msg;
 	}
 
 }

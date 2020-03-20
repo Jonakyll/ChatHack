@@ -3,17 +3,15 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 
 public class ByteReader implements Reader<Byte> {
-	
+
 	private enum State {
-		DONE,
-		WAITING,
-		ERROR
+		DONE, WAITING, ERROR
 	};
-	
+
 	private final ByteBuffer bb;
 	private State state = State.WAITING;
 	private byte value;
-	
+
 	public ByteReader(ByteBuffer bb) {
 		this.bb = bb;
 	}
@@ -24,14 +22,13 @@ public class ByteReader implements Reader<Byte> {
 			throw new IllegalStateException();
 		}
 		bb.flip();
-		
+
 		try {
 			if (bb.remaining() >= Byte.BYTES) {
 				value = bb.get();
 				state = State.DONE;
 				return ProcessStatus.DONE;
-			}
-			else {
+			} else {
 				return ProcessStatus.REFILL;
 			}
 		} finally {

@@ -7,11 +7,9 @@ import java.util.List;
 public class IpReader implements Reader<List<Byte>> {
 
 	private enum State {
-		DONE,
-		WAITING,
-		ERROR
+		DONE, WAITING, ERROR
 	};
-	
+
 	private final ByteBuffer bb;
 	private State state = State.WAITING;
 	private int ipVersion;
@@ -37,11 +35,9 @@ public class IpReader implements Reader<List<Byte>> {
 				if (bb.remaining() < 4 * Byte.BYTES) {
 					return ProcessStatus.REFILL;
 				}
-				
-				for (int i=0; i<4; ++i) {
-					ip.add(bb.get()); 
+				for (int i = 0; i < 4; ++i) {
+					ip.add(bb.get());
 				}
-				
 				state = State.DONE;
 				return ProcessStatus.DONE;
 
@@ -49,11 +45,9 @@ public class IpReader implements Reader<List<Byte>> {
 				if (bb.remaining() < 16 * Byte.BYTES) {
 					return ProcessStatus.REFILL;
 				}
-				
-				for (int i=0; i<16; ++i) {
-					ip.add(bb.get()); 
+				for (int i = 0; i < 16; ++i) {
+					ip.add(bb.get());
 				}
-				
 				state = State.DONE;
 				return ProcessStatus.DONE;
 

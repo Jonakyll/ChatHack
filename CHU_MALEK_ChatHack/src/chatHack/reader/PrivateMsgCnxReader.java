@@ -4,13 +4,12 @@ import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
 import chatHack.frame.PrivateMsgCnxToDstFrame;
+import chatHack.frame.SimpleMsgFrame;
 
 public class PrivateMsgCnxReader implements Reader<Frame> {
 
 	private enum State {
-		DONE,
-		WAITING,
-		ERROR
+		DONE, WAITING, ERROR
 	};
 
 	private final ByteBuffer bb;
@@ -32,7 +31,7 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 		}
 
 		switch (state) {
-			
+
 		case WAITING:
 			ProcessStatus dstStatus = dstReader.process();
 			if (dstStatus != ProcessStatus.DONE) {
@@ -41,11 +40,11 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 			dst = dstReader.get();
 			state = State.DONE;
 			return ProcessStatus.DONE;
-			
+
 		default:
 			throw new AssertionError();
 		}
-		}
+	}
 
 	@Override
 	public Frame get() {
@@ -54,7 +53,8 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 		}
 		return new PrivateMsgCnxToDstFrame(step, dst);
 
-		//		verifier le cas ou la trame est mauvaise
+		// verifier le cas ou la trame est mauvaise
+//		return new SimpleMsgFrame((byte) 4, "your request couldn't reach your recipient");
 	}
 
 	@Override

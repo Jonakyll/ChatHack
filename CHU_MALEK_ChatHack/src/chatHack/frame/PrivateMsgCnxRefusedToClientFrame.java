@@ -28,7 +28,6 @@ public class PrivateMsgCnxRefusedToClientFrame implements Frame {
 	
 	@Override
 	public String toString() {
-		System.out.println("wesh");
 		return errMsg;
 	}
 

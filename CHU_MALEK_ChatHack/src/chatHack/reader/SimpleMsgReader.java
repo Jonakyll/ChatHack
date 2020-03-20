@@ -2,15 +2,13 @@ package chatHack.reader;
 
 import java.nio.ByteBuffer;
 
-import chatHack.frame.ErrFrame;
 import chatHack.frame.Frame;
+import chatHack.frame.SimpleMsgFrame;
 
-public class ErrReader implements Reader<Frame> {
+public class SimpleMsgReader implements Reader<Frame> {
 
-	private enum State {
-		DONE,
-		WAITING,
-		ERROR
+	public enum State {
+		DONE, WAITING, ERROR
 	};
 
 	private final ByteBuffer bb;
@@ -19,7 +17,7 @@ public class ErrReader implements Reader<Frame> {
 
 	private final StringReader msgReader;
 
-	public ErrReader(ByteBuffer bb) {
+	public SimpleMsgReader(ByteBuffer bb) {
 		this.bb = bb;
 		this.msgReader = new StringReader(bb);
 	}
@@ -30,19 +28,13 @@ public class ErrReader implements Reader<Frame> {
 			throw new IllegalStateException();
 		}
 
-		switch (state) {
-		case WAITING:
-			ProcessStatus msgStatus = msgReader.process();
-			if (msgStatus != ProcessStatus.DONE) {
-				return msgStatus;
-			}
-			msg = msgReader.get();
-			state = State.DONE;
-			return ProcessStatus.DONE;
-
-		default:
-			throw new AssertionError();
+		ProcessStatus msgStatus = msgReader.process();
+		if (msgStatus != ProcessStatus.DONE) {
+			return msgStatus;
 		}
+		msg = msgReader.get();
+		state = State.DONE;
+		return ProcessStatus.DONE;
 	}
 
 	@Override
@@ -50,7 +42,7 @@ public class ErrReader implements Reader<Frame> {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		return new ErrFrame(msg);
+		return new SimpleMsgFrame((byte) 0, msg);
 	}
 
 	@Override

@@ -15,13 +15,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
-import chatHack.reader.ErrReader;
 import chatHack.reader.GlobalMsgReader;
 import chatHack.reader.LogOutToClientReader;
-import chatHack.reader.LogOutToServerReader;
 import chatHack.reader.PrivateMsgCnxReader;
 import chatHack.reader.PrivateMsgCnxResToClientReader;
 import chatHack.reader.Reader;
+import chatHack.reader.SimpleMsgReader;
 
 public class ClientChatHack {
 
@@ -40,7 +39,7 @@ public class ClientChatHack {
 
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
 	private Reader<Frame> reader;
-	//	private final Reader<Frame> reader = new LogReader(bbin);
+	// private final Reader<Frame> reader = new LogReader(bbin);
 
 	public ClientChatHack(SocketAddress socketAddress) throws IOException {
 		this.sc = SocketChannel.open();
@@ -58,15 +57,15 @@ public class ClientChatHack {
 
 		while (!Thread.interrupted()) {
 
-			//			try {
-			//				processOut();
-			//				updateInterestOps();
-			//				selector.select(this::treatKey);
+			// try {
+			// processOut();
+			// updateInterestOps();
+			// selector.select(this::treatKey);
 			//
 			//
-			//			} catch (UncheckedIOException tunneled) {
-			//				throw tunneled.getCause();
-			//			}
+			// } catch (UncheckedIOException tunneled) {
+			// throw tunneled.getCause();
+			// }
 
 			selector.select();
 			processOut();
@@ -90,32 +89,32 @@ public class ClientChatHack {
 		}
 	}
 
-	//	private void treatKey(SelectionKey key) {
+	// private void treatKey(SelectionKey key) {
 	//
-	//		try {
+	// try {
 	//
-	//			if (key.isValid() && key.isConnectable()) {
-	//				doConnect();
-	//			}
-	//		} catch (IOException ioe) {
-	//			throw new UncheckedIOException(ioe);
-	//		}
+	// if (key.isValid() && key.isConnectable()) {
+	// doConnect();
+	// }
+	// } catch (IOException ioe) {
+	// throw new UncheckedIOException(ioe);
+	// }
 	//
-	//		try {
+	// try {
 	//
-	//			if (key.isValid() && key.isWritable()) {
-	//				doWrite();
-	//			}
+	// if (key.isValid() && key.isWritable()) {
+	// doWrite();
+	// }
 	//
-	//			if (key.isValid() && key.isReadable()) {
-	//				System.out.println("wesh");
-	//				doRead();
-	//			}
-	//		} catch (IOException e) {
-	//			logger.info("Connection closed with client due to IOException");
-	//			silentlyClose();
-	//		}
-	//	}
+	// if (key.isValid() && key.isReadable()) {
+	// System.out.println("wesh");
+	// doRead();
+	// }
+	// } catch (IOException e) {
+	// logger.info("Connection closed with client due to IOException");
+	// silentlyClose();
+	// }
+	// }
 
 	private void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -152,9 +151,9 @@ public class ClientChatHack {
 			case DONE:
 				Frame frame = (Frame) reader.get();
 
-//				queueFrame(frame);
+				// queueFrame(frame);
 				System.out.println(frame);
-				
+
 				reader.reset();
 				break;
 
@@ -170,7 +169,7 @@ public class ClientChatHack {
 
 	private void checkOpcode() {
 		bbin.flip();
-		
+
 		if (bbin.remaining() >= Byte.BYTES) {
 
 			byte opcode = bbin.get();
@@ -178,6 +177,7 @@ public class ClientChatHack {
 
 			switch (opcode) {
 			case 0:
+				reader = new SimpleMsgReader(bbin);
 				break;
 
 			case 1:
@@ -193,17 +193,17 @@ public class ClientChatHack {
 				break;
 
 			case 4:
-				reader = new ErrReader(bbin);
+				reader = new SimpleMsgReader(bbin);
 				break;
 
 			default:
-				//				envoyer un message d'erreur a l'expediteur?
+				// envoyer un message d'erreur a l'expediteur?
 				break;
 			}
 		}
 		bbin.compact();
 	}
-	
+
 	private void checkStep() {
 		if (bbin.remaining() >= Byte.BYTES) {
 
@@ -218,22 +218,23 @@ public class ClientChatHack {
 			case 1:
 				reader = new PrivateMsgCnxResToClientReader(bbin);
 				break;
-				
+
 			case 2:
+				// reader pour les envoies de msg prives
 				break;
 
 			default:
-				//					envoyer un message d'erreur a l'expediteur?
+				// envoyer un message d'erreur a l'expediteur?
 				break;
 			}
 		}
 	}
 
-//	private void queueFrame(Frame frame) {
-//		queue.add(frame.toByteBuffer());
-//		processOut();
-//		updateInterestOps();
-//	}
+	// private void queueFrame(Frame frame) {
+	// queue.add(frame.toByteBuffer());
+	// processOut();
+	// updateInterestOps();
+	// }
 
 	private void processOut() {
 		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
@@ -274,21 +275,20 @@ public class ClientChatHack {
 					String line;
 
 					while (scan.hasNextLine()) {
-//						il faut gerer tous les paquets possibles venant du client
-						
+						// il faut gerer tous les paquets possibles venant du client
+
 						line = scan.nextLine();
 
-						ByteBuffer buff = ByteBuffer.allocate(19 * Byte.BYTES);
-						
-						buff.put((byte) 3);
-						buff.put((byte) 1);
-						buff.put((byte) 4);
-						
-						buff.put((byte) 000);
-						buff.put((byte) 111);
-						buff.put((byte) 222);
-						buff.put((byte) 333);
-						
+						ByteBuffer bb = StandardCharsets.UTF_8.encode(line);
+						ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + 2 * bb.remaining());
+
+						buff.put((byte) 0);
+						buff.put((byte) 0);
+						buff.putInt(bb.remaining());
+						buff.put(bb);
+						buff.putInt(bb.remaining());
+						buff.put(bb);
+
 						buff.flip();
 
 						queue.put(buff);

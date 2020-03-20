@@ -3,16 +3,12 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
-import chatHack.frame.LogOutPrivateFrame;
-import chatHack.frame.LogOutPublicFrame;
+import chatHack.frame.LogOutFrame;
 
 public class LogOutToClientReader implements Reader<Frame> {
 
 	private enum State {
-		DONE,
-		WAITING_TYPE,
-		WAITING_MSG,
-		ERROR
+		DONE, WAITING_TYPE, WAITING_MSG, ERROR
 	};
 
 	private final ByteBuffer bb;
@@ -65,9 +61,9 @@ public class LogOutToClientReader implements Reader<Frame> {
 			throw new IllegalStateException();
 		}
 		if (logOutType == 0) {
-			return new LogOutPublicFrame(msg);
+			return new LogOutFrame((byte) 0, msg);
 		}
-		return new LogOutPrivateFrame(msg);
+		return new LogOutFrame((byte) 1, msg);
 	}
 
 	@Override

@@ -11,13 +11,7 @@ import chatHack.frame.PrivateMsgCnxRefusedToServerFrame;
 public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 
 	private enum State {
-		DONE,
-		WAITING_RES_TYPE,
-		WAITING_PORT,
-		WAITING_TOKEN,
-		WAITING_IP_VERSION,
-		WAITING_IP,
-		ERROR,
+		DONE, WAITING_RES_TYPE, WAITING_PORT, WAITING_TOKEN, WAITING_IP_VERSION, WAITING_IP, ERROR,
 	};
 
 	private final ByteBuffer bb;
@@ -61,8 +55,7 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 				return ProcessStatus.DONE;
 			}
 			state = State.WAITING_PORT;
-			//			tester le cas d'erreur
-
+			// tester le cas d'erreur
 
 		case WAITING_PORT:
 			ProcessStatus portStatus = portReader.process();
@@ -79,7 +72,6 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 			}
 			token = tokenReader.get();
 			state = State.WAITING_IP_VERSION;
-
 
 		case WAITING_IP_VERSION:
 			ProcessStatus ipVersionStatus = ipVersionReader.process();
@@ -128,6 +120,5 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		ipVersionReader.reset();
 		state = State.WAITING_RES_TYPE;
 	}
-
 
 }

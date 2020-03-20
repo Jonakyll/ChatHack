@@ -3,20 +3,12 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
-import chatHack.frame.ErrFrame;
-import chatHack.frame.LogNoPwdFrame;
-import chatHack.frame.LogWithPwdFrame;
-import chatHack.frame.MessageFrame;
-import chatHack.frame.TestFrame;
+import chatHack.frame.SimpleMsgFrame;
 
 public class LogReader implements Reader<Frame> {
 
 	private enum State {
-		DONE,
-		WAITING_CODE,
-		WAITING_NAME,
-		WAITING_PASSWORD,
-		ERROR
+		DONE, WAITING_CODE, WAITING_NAME, WAITING_PASSWORD, ERROR
 	};
 
 	private final ByteBuffer bb;
@@ -61,12 +53,11 @@ public class LogReader implements Reader<Frame> {
 
 			if (code == 0) {
 				state = State.WAITING_PASSWORD;
-			}
-			else if (code == 1) {
+			} else if (code == 1) {
 				state = State.DONE;
 				return ProcessStatus.DONE;
 			}
-			//			tester le cas d'erreur
+			// tester le cas d'erreur
 		}
 
 		case WAITING_PASSWORD: {
@@ -90,19 +81,11 @@ public class LogReader implements Reader<Frame> {
 			throw new IllegalStateException();
 		}
 
-		return new ErrFrame("log error");
-		
-//		switch (code) {
-//		case 0:
-//			//			juste pour verifier que ça marche mais pas necessaire
-//			return new LogWithPwdFrame(name, password);
-//		case 1:
-//			//			juste pour verifier que ça marche mais pas necessaire
-//			return new LogNoPwdFrame(name);
-//		default:
-//			return new ErrFrame("log error");
-//		}
-	} 
+		return new SimpleMsgFrame((byte) 0, "you are connected as " + name);
+
+//		dans le cas ou le serveur n'a pas pu connecter l'utilisateur
+//		return new SimpleMsgFrame((byte) 4, "we coudln't connect you to the public channel");
+	}
 
 	@Override
 	public void reset() {

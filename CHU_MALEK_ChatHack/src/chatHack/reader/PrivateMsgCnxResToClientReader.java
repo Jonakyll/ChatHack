@@ -48,7 +48,7 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 			throw new IllegalStateException();
 		}
 
-		for(;;) {
+		for (;;) {
 
 			switch (state) {
 
@@ -145,7 +145,7 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 		if (ipReader != null) {
 			ipReader.reset();
 		}
-		
+
 		errMsgReader.reset();
 		state = State.WAITING_RES_TYPE;
 	}

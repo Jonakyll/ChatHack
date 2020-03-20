@@ -6,31 +6,28 @@ import java.nio.charset.StandardCharsets;
 public class StringReader implements Reader<String> {
 
 	private enum State {
-		DONE,
-		WAITING_INT,
-		WAITING_STRING,
-		ERROR
+		DONE, WAITING_INT, WAITING_STRING, ERROR
 	};
-	
+
 	private final ByteBuffer bb;
 	private State state = State.WAITING_INT;
 	private int size;
 	private String msg;
-	
+
 	public StringReader(ByteBuffer bb) {
 		this.bb = bb;
 	}
-	
+
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
 			throw new IllegalStateException();
 		}
 		bb.flip();
-		
+
 		try {
 			switch (state) {
-			
+
 			case WAITING_INT: {
 				if (bb.remaining() < Integer.BYTES) {
 					return ProcessStatus.REFILL;
@@ -42,7 +39,7 @@ public class StringReader implements Reader<String> {
 //				}
 				state = State.WAITING_STRING;
 			}
-			
+
 			case WAITING_STRING: {
 				if (bb.remaining() < size) {
 					return ProcessStatus.REFILL;
@@ -54,8 +51,8 @@ public class StringReader implements Reader<String> {
 				state = State.DONE;
 				return ProcessStatus.DONE;
 			}
-			
-			default: 
+
+			default:
 				throw new AssertionError();
 			}
 		} finally {

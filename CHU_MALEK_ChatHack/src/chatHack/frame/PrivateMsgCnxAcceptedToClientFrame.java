@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.StringJoiner;
 
+import chatHack.visitor.FrameVisitor;
+
 public class PrivateMsgCnxAcceptedToClientFrame implements Frame {
 	
 	private final int port;
@@ -57,6 +59,12 @@ public class PrivateMsgCnxAcceptedToClientFrame implements Frame {
 		}
 		
 		return "you can now open a connection to " + joiner.toString() + " on port " + port;
+	}
+
+	@Override
+	public void accept(FrameVisitor visitor) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

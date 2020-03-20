@@ -21,18 +21,13 @@ public class ByteReader implements Reader<Byte> {
 		if (state == State.DONE || state == State.ERROR) {
 			throw new IllegalStateException();
 		}
-		bb.flip();
 
-		try {
-			if (bb.remaining() >= Byte.BYTES) {
-				value = bb.get();
-				state = State.DONE;
-				return ProcessStatus.DONE;
-			} else {
-				return ProcessStatus.REFILL;
-			}
-		} finally {
-			bb.compact();
+		if (bb.remaining() >= Byte.BYTES) {
+			value = bb.get();
+			state = State.DONE;
+			return ProcessStatus.DONE;
+		} else {
+			return ProcessStatus.REFILL;
 		}
 	}
 

@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
+import chatHack.reader.FrameToServerReader;
 import chatHack.reader.GlobalMsgReader;
 import chatHack.reader.LogOutToServerReader;
 import chatHack.reader.LogReader;
@@ -36,8 +37,8 @@ public class ServerChatHack {
 		private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
 
 		private final Queue<ByteBuffer> queue = new LinkedList<>();
-		private Reader reader;
-		//		private Reader<Frame> reader = new LogReader(bbin);
+//		private Reader reader;
+		private Reader<Frame> reader = new FrameToServerReader(bbin);
 
 		private Context(ServerChatHack server, SelectionKey key) {
 			this.key = key;
@@ -46,15 +47,25 @@ public class ServerChatHack {
 		}
 
 		private void processIn() {
-			checkOpcode();
 
 			for (;;) {
 				Reader.ProcessStatus status = reader.process();
 
-				switch(status) {
+				switch (status) {
 				case DONE: {
 					Frame frame = (Frame) reader.get();
+//					ByteBuffer frameBuff = frame.toByteBuffer();
+//					byte opcode = frameBuff.get();
+
+//					if (opcode == 0 || opcode == 1) {
+//						server.sendToMDP(frame);
+//					}
+
+//					pour le chat global
+//					if (opcode == 2) {
 					server.broadcast(frame);
+//					}
+
 					reader.reset();
 					break;
 				}
@@ -65,67 +76,6 @@ public class ServerChatHack {
 				case ERROR:
 					silentlyClose();
 					return;
-				}
-			}
-		}
-
-		private void checkOpcode() {
-			bbin.flip();
-
-			try {
-
-				if (bbin.remaining() >= Byte.BYTES) {
-
-					byte opcode = bbin.get();
-					System.out.println("opcode " + opcode);
-
-					switch (opcode) {
-					case 0:
-						reader = new LogReader(bbin);
-						break;
-
-					case 1:
-						reader = new GlobalMsgReader(bbin);
-						break;
-
-					case 2:
-						checkStep();
-						break;
-
-					case 3:
-						reader = new LogOutToServerReader(bbin);
-						break;
-
-					default:
-						//				envoyer un message d'erreur a l'expediteur?
-						break;
-					}
-				}
-			} finally {
-				bbin.compact();
-
-			}
-		}
-
-		private void checkStep() {
-
-			if (bbin.remaining() >= Byte.BYTES) {
-
-				byte step = bbin.get();
-				System.out.println("step " + step);
-
-				switch (step) {
-				case 0:
-					reader = new PrivateMsgCnxReader(bbin);
-					break;
-
-				case 1:
-					reader = new PrivateMsgCnxResToServerReader(bbin);
-					break;
-
-				default:
-					//					envoyer un message d'erreur a l'expediteur?
-					break;
 				}
 			}
 		}
@@ -143,6 +93,8 @@ public class ServerChatHack {
 		}
 
 		private void updateInterestOps() {
+			System.out.println("bbin " + bbin.remaining());
+			System.out.println("bbout " + bbout.remaining());
 			int ops = 0;
 
 			if (bbin.hasRemaining() && !closed) {
@@ -192,7 +144,14 @@ public class ServerChatHack {
 	private final ServerSocketChannel serverSocketChannel;
 	private final Selector selector;
 
-	public ServerChatHack(int port) throws IOException {
+	private final String MDPIp;
+	private final int MDPPort;
+
+	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
+//		pour connecter le serveur au serverMDP (pas encore fait)
+		this.MDPIp = MDPIp;
+		this.MDPPort = MDPPort;
+
 		serverSocketChannel = ServerSocketChannel.open();
 		serverSocketChannel.bind(new InetSocketAddress(port));
 		selector = Selector.open();
@@ -272,16 +231,20 @@ public class ServerChatHack {
 	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {
-		if (args.length != 1) {
+		if (args.length != 3) {
 			usage();
 			return;
 		}
-		ServerChatHack server = new ServerChatHack(Integer.parseInt(args[0]));
+		int port = Integer.parseInt(args[0]);
+		String MDPIp = args[1];
+		int MDPPort = Integer.parseInt(args[2]);
+
+		ServerChatHack server = new ServerChatHack(port, MDPIp, MDPPort);
 		server.launch();
 	}
 
 	private static void usage() {
-		System.out.println("Usage : ServerSumBetter port");
+		System.out.println("Usage : port MDPip MDPport");
 	}
 
 	/***

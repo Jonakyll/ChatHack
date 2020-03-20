@@ -2,6 +2,8 @@ package chatHack.frame;
 
 import java.nio.ByteBuffer;
 
+import chatHack.visitor.FrameVisitor;
+
 public class PrivateMsgCnxRefusedToServerFrame implements Frame {
 
 	public PrivateMsgCnxRefusedToServerFrame() {
@@ -17,6 +19,12 @@ public class PrivateMsgCnxRefusedToServerFrame implements Frame {
 		buff.flip();
 		
 		return buff;
+	}
+
+	@Override
+	public void accept(FrameVisitor visitor) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

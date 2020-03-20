@@ -21,18 +21,13 @@ public class IntReader implements Reader<Integer> {
 		if (state == State.DONE || state == State.ERROR) {
 			throw new IllegalStateException();
 		}
-		bb.flip();
 
-		try {
-			if (bb.remaining() >= Integer.BYTES) {
-				value = bb.getInt();
-				state = State.DONE;
-				return ProcessStatus.DONE;
-			} else {
-				return ProcessStatus.REFILL;
-			}
-		} finally {
-			bb.compact();
+		if (bb.remaining() >= Integer.BYTES) {
+			value = bb.getInt();
+			state = State.DONE;
+			return ProcessStatus.DONE;
+		} else {
+			return ProcessStatus.REFILL;
 		}
 	}
 

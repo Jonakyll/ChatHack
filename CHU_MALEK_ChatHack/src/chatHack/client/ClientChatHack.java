@@ -15,12 +15,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 import chatHack.frame.Frame;
-import chatHack.reader.GlobalMsgReader;
-import chatHack.reader.LogOutToClientReader;
-import chatHack.reader.PrivateMsgCnxReader;
-import chatHack.reader.PrivateMsgCnxResToClientReader;
+import chatHack.reader.FrameToClientReader;
 import chatHack.reader.Reader;
-import chatHack.reader.SimpleMsgReader;
 
 public class ClientChatHack {
 
@@ -30,7 +26,7 @@ public class ClientChatHack {
 	private final ByteBuffer bbin = ByteBuffer.allocateDirect(BUFFER_SIZE);
 	private final ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
 	private final SocketChannel sc;
-	private final SocketAddress socketAddress;
+	private SocketAddress socketAddress;
 	private final Selector selector;
 	private SelectionKey uniqueKey;
 	private boolean closed = false;
@@ -38,16 +34,29 @@ public class ClientChatHack {
 	private Thread readThread;
 
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
-	private Reader<Frame> reader;
-	// private final Reader<Frame> reader = new LogReader(bbin);
+//	private Reader<Frame> reader;
+	 private final Reader<Frame> reader = new FrameToClientReader(bbin);
+	
+	private final String ip;
+	private final int port;
+	private final String path;
+	private final String login;
+	private final String password;
 
-	public ClientChatHack(SocketAddress socketAddress) throws IOException {
+	public ClientChatHack(String ip, int port, String path, String login, String password) throws IOException {
+		this.ip = ip;
+		this.port = port;
+		this.path = path;
+		this.login = login;
+		this.password = password;
 		this.sc = SocketChannel.open();
-		this.socketAddress = socketAddress;
+//		this.socketAddress = socketAddress;
 		this.selector = Selector.open();
 	}
 
 	public void launch() throws IOException {
+		socketAddress = new InetSocketAddress(ip, port);
+		
 		sc.configureBlocking(false);
 		sc.connect(socketAddress);
 		uniqueKey = sc.register(selector, SelectionKey.OP_CONNECT);
@@ -142,7 +151,6 @@ public class ClientChatHack {
 	}
 
 	private void processIn() {
-		checkOpcode();
 
 		for (;;) {
 			Reader.ProcessStatus status = reader.process();
@@ -163,69 +171,6 @@ public class ClientChatHack {
 			case ERROR:
 				silentlyClose();
 				return;
-			}
-		}
-	}
-
-	private void checkOpcode() {
-		bbin.flip();
-
-		if (bbin.remaining() >= Byte.BYTES) {
-
-			byte opcode = bbin.get();
-			System.out.println("opcode " + opcode);
-
-			switch (opcode) {
-			case 0:
-				reader = new SimpleMsgReader(bbin);
-				break;
-
-			case 1:
-				reader = new GlobalMsgReader(bbin);
-				break;
-
-			case 2:
-				checkStep();
-				break;
-
-			case 3:
-				reader = new LogOutToClientReader(bbin);
-				break;
-
-			case 4:
-				reader = new SimpleMsgReader(bbin);
-				break;
-
-			default:
-				// envoyer un message d'erreur a l'expediteur?
-				break;
-			}
-		}
-		bbin.compact();
-	}
-
-	private void checkStep() {
-		if (bbin.remaining() >= Byte.BYTES) {
-
-			byte step = bbin.get();
-			System.out.println("step " + step);
-
-			switch (step) {
-			case 0:
-				reader = new PrivateMsgCnxReader(bbin);
-				break;
-
-			case 1:
-				reader = new PrivateMsgCnxResToClientReader(bbin);
-				break;
-
-			case 2:
-				// reader pour les envoies de msg prives
-				break;
-
-			default:
-				// envoyer un message d'erreur a l'expediteur?
-				break;
 			}
 		}
 	}
@@ -251,7 +196,7 @@ public class ClientChatHack {
 		if (bbout.position() != 0) {
 			ops |= SelectionKey.OP_WRITE;
 		}
-		if (ops == 0) {
+		if 	(ops == 0) {
 			silentlyClose();
 		} else {
 			uniqueKey.interestOps(ops);
@@ -265,7 +210,7 @@ public class ClientChatHack {
 
 		}
 	}
-
+	
 	public void sendFrame() {
 		readThread = new Thread(() -> {
 
@@ -286,6 +231,7 @@ public class ClientChatHack {
 						buff.put((byte) 0);
 						buff.putInt(bb.remaining());
 						buff.put(bb);
+						bb.flip();
 						buff.putInt(bb.remaining());
 						buff.put(bb);
 
@@ -303,18 +249,27 @@ public class ClientChatHack {
 	}
 
 	public static void main(String[] args) throws IOException {
-		if (args.length != 2) {
+		if (args.length != 4 && args.length != 5) {
 			usage();
 			return;
 		}
-		SocketAddress socketAddress = new InetSocketAddress(args[0], Integer.parseInt(args[1]));
-
-		ClientChatHack client = new ClientChatHack(socketAddress);
+		
+		String ip = args[0];
+		int port = Integer.parseInt(args[1]);
+		String path = args[2];
+		String login = args[3];
+		String password = "";
+		
+		if (args.length == 5) {
+			password = args[4];
+		}
+		
+		ClientChatHack client = new ClientChatHack(ip, port, path, login, password);
 		client.sendFrame();
 		client.launch();
 	}
 
 	private static void usage() {
-		logger.info("Usage : socketAddress port");
+		logger.info("Usage : ip port path login password");
 	}
 }

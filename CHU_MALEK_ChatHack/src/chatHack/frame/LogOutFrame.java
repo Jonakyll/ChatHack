@@ -3,6 +3,8 @@ package chatHack.frame;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import chatHack.visitor.FrameVisitor;
+
 public class LogOutFrame implements Frame {
 
 	private final byte logoutType;
@@ -30,6 +32,12 @@ public class LogOutFrame implements Frame {
 	@Override
 	public String toString() {
 		return msg;
+	}
+
+	@Override
+	public void accept(FrameVisitor visitor) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

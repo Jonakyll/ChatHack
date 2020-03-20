@@ -25,37 +25,31 @@ public class IpReader implements Reader<List<Byte>> {
 		if (state == State.DONE || state == State.ERROR) {
 			throw new IllegalStateException();
 		}
-		bb.flip();
 
-		try {
+		switch (ipVersion) {
 
-			switch (ipVersion) {
-
-			case 4:
-				if (bb.remaining() < 4 * Byte.BYTES) {
-					return ProcessStatus.REFILL;
-				}
-				for (int i = 0; i < 4; ++i) {
-					ip.add(bb.get());
-				}
-				state = State.DONE;
-				return ProcessStatus.DONE;
-
-			case 6:
-				if (bb.remaining() < 16 * Byte.BYTES) {
-					return ProcessStatus.REFILL;
-				}
-				for (int i = 0; i < 16; ++i) {
-					ip.add(bb.get());
-				}
-				state = State.DONE;
-				return ProcessStatus.DONE;
-
-			default:
-				throw new AssertionError();
+		case 4:
+			if (bb.remaining() < 4 * Byte.BYTES) {
+				return ProcessStatus.REFILL;
 			}
-		} finally {
-			bb.compact();
+			for (int i = 0; i < 4; ++i) {
+				ip.add(bb.get());
+			}
+			state = State.DONE;
+			return ProcessStatus.DONE;
+
+		case 6:
+			if (bb.remaining() < 16 * Byte.BYTES) {
+				return ProcessStatus.REFILL;
+			}
+			for (int i = 0; i < 16; ++i) {
+				ip.add(bb.get());
+			}
+			state = State.DONE;
+			return ProcessStatus.DONE;
+
+		default:
+			throw new AssertionError();
 		}
 	}
 

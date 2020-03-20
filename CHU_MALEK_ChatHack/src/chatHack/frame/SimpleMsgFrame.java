@@ -3,6 +3,8 @@ package chatHack.frame;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import chatHack.visitor.FrameVisitor;
+
 public class SimpleMsgFrame implements Frame {
 	
 	private final byte opcode;
@@ -29,6 +31,12 @@ public class SimpleMsgFrame implements Frame {
 	@Override
 	public String toString() {
 		return msg;
+	}
+
+	@Override
+	public void accept(FrameVisitor visitor) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

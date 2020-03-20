@@ -3,6 +3,8 @@ package chatHack.frame;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import chatHack.visitor.FrameVisitor;
+
 public class PrivateMsgCnxRefusedToClientFrame implements Frame {
 
 	private final String errMsg;
@@ -29,6 +31,12 @@ public class PrivateMsgCnxRefusedToClientFrame implements Frame {
 	@Override
 	public String toString() {
 		return errMsg;
+	}
+
+	@Override
+	public void accept(FrameVisitor visitor) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

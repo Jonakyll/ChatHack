@@ -3,6 +3,8 @@ package chatHack.frame;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import chatHack.visitor.FrameVisitor;
+
 public class GlobalMsgFrame implements Frame {
 
 	private final String exp;
@@ -32,6 +34,12 @@ public class GlobalMsgFrame implements Frame {
 	@Override
 	public String toString() {
 		return exp + ": " + msg;
+	}
+
+	@Override
+	public void accept(FrameVisitor visitor) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

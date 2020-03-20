@@ -3,6 +3,8 @@ package chatHack.frame;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import chatHack.visitor.FrameVisitor;
+
 public class PrivateMsgCnxToDstFrame implements Frame {
 	
 	private final byte step;
@@ -30,6 +32,12 @@ public class PrivateMsgCnxToDstFrame implements Frame {
 	@Override
 	public String toString() {
 		return dst + " wants to open a private channel with you.";
+	}
+
+	@Override
+	public void accept(FrameVisitor visitor) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

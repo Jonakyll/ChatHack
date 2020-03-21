@@ -223,7 +223,7 @@ public class ClientChatHack {
 
 						line = scan.nextLine();
 						
-						ByteBuffer sender = StandardCharsets.UTF_8.encode("JOJO");
+						ByteBuffer sender = StandardCharsets.UTF_8.encode(login);
 						ByteBuffer bb = StandardCharsets.UTF_8.encode(line);
 						ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + bb.remaining() + sender.remaining());
 

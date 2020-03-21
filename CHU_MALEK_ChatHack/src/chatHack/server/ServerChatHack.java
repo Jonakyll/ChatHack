@@ -31,7 +31,6 @@ public class ServerChatHack {
 	private SelectionKey MDPKey;
 
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
-//		pour connecter le serveur au serverMDP (pas encore fait)
 		this.MDPIp = MDPIp;
 		this.MDPPort = MDPPort;
 		this.sc = SocketChannel.open();
@@ -41,14 +40,13 @@ public class ServerChatHack {
 		selector = Selector.open();
 	}
 
-	public void launch() throws IOException {
-//		pour connecter le serveur au serverMDP
+	private void launch() throws IOException {
 		socketAdress = new InetSocketAddress(MDPIp, MDPPort);
 		sc.configureBlocking(false);
 		sc.connect(socketAdress);
 		MDPKey = sc.register(selector, SelectionKey.OP_CONNECT);
 		MDPKey.attach(new Context(this, MDPKey));
-		
+
 		serverSocketChannel.configureBlocking(false);
 		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
@@ -117,19 +115,20 @@ public class ServerChatHack {
 
 			Context ctx = (Context) key.attachment();
 
-			if (ctx == null || ctx.getKey() == MDPKey) {
+			if (ctx == null) {
 				continue;
 			}
+
 			ctx.queueFrame(buff);
 			buff.flip();
 		}
 	}
-	
+
 	public void sendToMDP(ByteBuffer buff) {
 		for (SelectionKey key : selector.keys()) {
-			
+
 			Context ctx = (Context) key.attachment();
-			
+
 			if (ctx == null || ctx.getKey() != MDPKey) {
 				continue;
 			}

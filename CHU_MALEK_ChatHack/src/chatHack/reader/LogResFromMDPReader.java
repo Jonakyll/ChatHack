@@ -3,7 +3,7 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
-import chatHack.frame.ServerMDPResFrame;
+import chatHack.frame.LogResFromServerMDPFrame;
 
 public class LogResFromMDPReader implements Reader<Frame> {
 
@@ -46,7 +46,7 @@ public class LogResFromMDPReader implements Reader<Frame> {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		return new ServerMDPResFrame(opcode, id);
+		return new LogResFromServerMDPFrame(opcode, id);
 	}
 
 	@Override

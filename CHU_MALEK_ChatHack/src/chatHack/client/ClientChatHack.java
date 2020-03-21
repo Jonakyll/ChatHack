@@ -17,6 +17,8 @@ import java.util.logging.Logger;
 import chatHack.frame.Frame;
 import chatHack.reader.FrameToClientReader;
 import chatHack.reader.Reader;
+import chatHack.visitor.ChatHackClientVIsitor;
+import chatHack.visitor.FrameVisitor;
 
 public class ClientChatHack {
 
@@ -31,57 +33,75 @@ public class ClientChatHack {
 	private SelectionKey uniqueKey;
 	private boolean closed = false;
 
+	private Thread mainThread;
 	private Thread readThread;
+	private Thread cnxThread;
 
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
-//	private Reader<Frame> reader;
-	 private final Reader<Frame> reader = new FrameToClientReader(bbin);
-	
+	// private Reader<Frame> reader;
+	private final Reader<Frame> reader = new FrameToClientReader(bbin);
+
 	private final String ip;
 	private final int port;
 	private final String path;
 	private final String login;
 	private final String password;
+	private final boolean withPassword;
+	private boolean connected = false;
 
-	public ClientChatHack(String ip, int port, String path, String login, String password) throws IOException {
+	private final FrameVisitor visitor = new ChatHackClientVIsitor(this);
+
+	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
+			throws IOException {
 		this.ip = ip;
 		this.port = port;
 		this.path = path;
 		this.login = login;
 		this.password = password;
+		this.withPassword = withPassword;
+
 		this.sc = SocketChannel.open();
-//		this.socketAddress = socketAddress;
+		// this.socketAddress = socketAddress;
 		this.selector = Selector.open();
 	}
 
-	public void launch() throws IOException {
-		socketAddress = new InetSocketAddress(ip, port);
-		
-		sc.configureBlocking(false);
-		sc.connect(socketAddress);
-		uniqueKey = sc.register(selector, SelectionKey.OP_CONNECT);
+	private void launch() throws IOException {
+		mainThread = new Thread(() -> {
 
-		System.out.println("Connected to: " + socketAddress.toString());
-		Set<SelectionKey> selectedKeys = selector.selectedKeys();
+			try {
+				socketAddress = new InetSocketAddress(ip, port);
 
-		while (!Thread.interrupted()) {
+				sc.configureBlocking(false);
+				sc.connect(socketAddress);
+				uniqueKey = sc.register(selector, SelectionKey.OP_CONNECT);
 
-			// try {
-			// processOut();
-			// updateInterestOps();
-			// selector.select(this::treatKey);
-			//
-			//
-			// } catch (UncheckedIOException tunneled) {
-			// throw tunneled.getCause();
-			// }
+				System.out.println("Connected to: " + socketAddress.toString());
+				Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
-			selector.select();
-			processOut();
-			updateInterestOps();
-			processSelectedKeys(selectedKeys);
-			selectedKeys.clear();
-		}
+				while (!Thread.interrupted()) {
+
+					// try {
+					// processOut();
+					// updateInterestOps();
+					// selector.select(this::treatKey);
+					//
+					//
+					// } catch (UncheckedIOException tunneled) {
+					// throw tunneled.getCause();
+					// }
+
+					selector.select();
+					processOut();
+					updateInterestOps();
+					processSelectedKeys(selectedKeys);
+					selectedKeys.clear();
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		});
+		mainThread.start();
 	}
 
 	private void processSelectedKeys(Set<SelectionKey> selectedKeys) throws IOException {
@@ -159,7 +179,7 @@ public class ClientChatHack {
 			case DONE:
 				Frame frame = (Frame) reader.get();
 				// queueFrame(frame);
-				System.out.println(frame);
+				frame.accept(visitor);
 
 				reader.reset();
 				break;
@@ -195,7 +215,7 @@ public class ClientChatHack {
 		if (bbout.position() != 0) {
 			ops |= SelectionKey.OP_WRITE;
 		}
-		if 	(ops == 0) {
+		if (ops == 0) {
 			silentlyClose();
 		} else {
 			uniqueKey.interestOps(ops);
@@ -209,12 +229,66 @@ public class ClientChatHack {
 
 		}
 	}
+
+	public boolean withPassword() {
+		return withPassword;
+	}
+
+	public void connect() {
+		connected = true;
+	}
+
+	public boolean isConnected() {
+		return connected;
+	}
+
+	private void connectToServer() {
+		cnxThread = new Thread(() -> {
+			System.out.println("try to connect");
+			try {
+				ByteBuffer loginBuff = StandardCharsets.UTF_8.encode(login);
+				ByteBuffer bb;
+				if (withPassword) {
+					ByteBuffer pwdBuff = StandardCharsets.UTF_8.encode(password);
+					bb = ByteBuffer
+							.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + loginBuff.remaining() + pwdBuff.remaining());
+
+					bb.put((byte) 2);
+					bb.put((byte) 0);
+					bb.putInt(loginBuff.remaining());
+					bb.put(loginBuff);
+					bb.putInt(pwdBuff.remaining());
+					bb.put(pwdBuff);
+					bb.flip();
+
+				} else {
+					bb = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + loginBuff.remaining());
+
+					bb.put((byte) 2);
+					bb.put((byte) 1);
+					bb.putInt(loginBuff.remaining());
+					bb.put(loginBuff);
+					bb.flip();
+
+				}
+				queue.put(bb);
+				selector.wakeup();
+			} catch (InterruptedException e) {
+				return;
+			}
+		});
+		cnxThread.start();
+	}
 	
-	public void sendFrame() {
+	private void sendFrameToServer() {
 		readThread = new Thread(() -> {
 
 			while (!Thread.interrupted()) {
-
+//				if (!connected) {
+//					mainThread.interrupt();
+//					return;
+//				}
+				System.out.println("you are connected");
 				try (Scanner scan = new Scanner(System.in)) {
 					String line;
 
@@ -222,13 +296,13 @@ public class ClientChatHack {
 						// il faut gerer tous les paquets possibles venant du client
 
 						line = scan.nextLine();
-						
-						ByteBuffer sender = StandardCharsets.UTF_8.encode(login);
-						ByteBuffer mdp = StandardCharsets.UTF_8.encode(password);
-						ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + mdp.remaining() + sender.remaining());
 
-						buff.put((byte) 2);
-						buff.put((byte) 0);
+						ByteBuffer sender = StandardCharsets.UTF_8.encode(login);
+						ByteBuffer mdp = StandardCharsets.UTF_8.encode(line);
+						ByteBuffer buff = ByteBuffer
+								.allocate(Byte.BYTES + 2 * Integer.BYTES + mdp.remaining() + sender.remaining());
+
+						buff.put((byte) 3);
 						buff.putInt(sender.remaining());
 						buff.put(sender);
 						buff.putInt(mdp.remaining());
@@ -252,20 +326,23 @@ public class ClientChatHack {
 			usage();
 			return;
 		}
-		
+
 		String ip = args[0];
 		int port = Integer.parseInt(args[1]);
 		String path = args[2];
 		String login = args[3];
 		String password = "";
-		
+		boolean withPassword = false;
+
 		if (args.length == 5) {
 			password = args[4];
+			withPassword = true;
 		}
-		
-		ClientChatHack client = new ClientChatHack(ip, port, path, login, password);
-		client.sendFrame();
+
+		ClientChatHack client = new ClientChatHack(ip, port, path, login, password, withPassword);
+		client.connectToServer();
 		client.launch();
+		client.sendFrameToServer();
 	}
 
 	private static void usage() {

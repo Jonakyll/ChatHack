@@ -11,7 +11,7 @@ import chatHack.frame.PrivateMsgCnxAcceptedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToServerFrame;
 import chatHack.frame.PrivateMsgCnxToDstFrame;
-import chatHack.frame.ServerMDPResFrame;
+import chatHack.frame.LogResFromServerMDPFrame;
 import chatHack.frame.SimpleMsgFrame;
 
 public interface FrameVisitor {
@@ -36,5 +36,5 @@ public interface FrameVisitor {
 	
 	ByteBuffer visitSimpleMsgFrame(SimpleMsgFrame frame);
 
-	ByteBuffer visitServerMDPResFrame(ServerMDPResFrame frame);
+	ByteBuffer visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame);
 }

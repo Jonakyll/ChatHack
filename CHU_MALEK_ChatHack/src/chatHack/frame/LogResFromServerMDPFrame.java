@@ -2,19 +2,19 @@ package chatHack.frame;
 
 import chatHack.visitor.FrameVisitor;
 
-public class ServerMDPResFrame implements Frame {
+public class LogResFromServerMDPFrame implements Frame {
 	
 	private final byte opcode;
 	private final long id;
 	
-	public ServerMDPResFrame(byte opcode, long id) {
+	public LogResFromServerMDPFrame(byte opcode, long id) {
 		this.opcode = opcode;
 		this.id = id;
 	}
 
 	@Override
 	public void accept(FrameVisitor visitor) {
-		visitor.visitServerMDPResFrame(this);
+		visitor.visitLogResFromServerMDPFrame(this);
 	}
 	
 	public byte getOpcode() {

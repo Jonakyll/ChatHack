@@ -3,6 +3,7 @@ package chatHack.server;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectableChannel;
@@ -25,11 +26,15 @@ public class ServerChatHack {
 
 	private final String MDPIp;
 	private final int MDPPort;
+	private SocketAddress socketAdress;
+	private final SocketChannel sc;
+	private SelectionKey MDPKey;
 
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 //		pour connecter le serveur au serverMDP (pas encore fait)
 		this.MDPIp = MDPIp;
 		this.MDPPort = MDPPort;
+		this.sc = SocketChannel.open();
 
 		serverSocketChannel = ServerSocketChannel.open();
 		serverSocketChannel.bind(new InetSocketAddress(port));
@@ -37,6 +42,13 @@ public class ServerChatHack {
 	}
 
 	public void launch() throws IOException {
+//		pour connecter le serveur au serverMDP
+		socketAdress = new InetSocketAddress(MDPIp, MDPPort);
+		sc.configureBlocking(false);
+		sc.connect(socketAdress);
+		MDPKey = sc.register(selector, SelectionKey.OP_CONNECT);
+		MDPKey.attach(new Context(this, MDPKey));
+		
 		serverSocketChannel.configureBlocking(false);
 		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
@@ -65,6 +77,9 @@ public class ServerChatHack {
 		}
 
 		try {
+			if (key.isValid() && key.isConnectable()) {
+				((Context) key.attachment()).doConnect();
+			}
 			if (key.isValid() && key.isWritable()) {
 				((Context) key.attachment()).doWrite();
 			}
@@ -102,7 +117,20 @@ public class ServerChatHack {
 
 			Context ctx = (Context) key.attachment();
 
-			if (ctx == null) {
+			if (ctx == null || ctx.getKey() == MDPKey) {
+				continue;
+			}
+			ctx.queueFrame(buff);
+			buff.flip();
+		}
+	}
+	
+	public void sendToMDP(ByteBuffer buff) {
+		for (SelectionKey key : selector.keys()) {
+			
+			Context ctx = (Context) key.attachment();
+			
+			if (ctx == null || ctx.getKey() != MDPKey) {
 				continue;
 			}
 			ctx.queueFrame(buff);

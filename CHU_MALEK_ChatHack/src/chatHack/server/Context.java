@@ -18,6 +18,7 @@ import chatHack.frame.PrivateMsgCnxAcceptedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToServerFrame;
 import chatHack.frame.PrivateMsgCnxToDstFrame;
+import chatHack.frame.ServerMDPResFrame;
 import chatHack.frame.SimpleMsgFrame;
 import chatHack.reader.FrameToServerReader;
 import chatHack.reader.Reader;
@@ -45,6 +46,10 @@ public class Context implements FrameVisitor {
 		this.sc = (SocketChannel) key.channel();
 		this.server = server;
 //		this.visitor = new ConcreteFrameVisitor(server);
+	}
+	
+	public SelectionKey getKey() {
+		return key;
 	}
 
 	private void processIn() {
@@ -117,6 +122,13 @@ public class Context implements FrameVisitor {
 
 		}
 	}
+	
+	public void doConnect() throws IOException {
+		if (!sc.finishConnect()) {
+			return;
+		}
+		updateInterestOps();
+	}
 
 	public void doWrite() throws IOException {
 		bbout.flip();
@@ -144,7 +156,7 @@ public class Context implements FrameVisitor {
 		ByteBuffer buff = ByteBuffer
 				.allocate(Byte.BYTES + 2 * Integer.BYTES + expBuff.remaining() + msgBuff.remaining());
 
-		buff.put((byte) 1);
+		buff.put((byte) 3);
 		buff.putInt(expBuff.remaining());
 		buff.put(expBuff);
 		buff.putInt(msgBuff.remaining());
@@ -164,13 +176,14 @@ public class Context implements FrameVisitor {
 		ByteBuffer nameBuff = StandardCharsets.UTF_8.encode(frame.getName());
 		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + Long.BYTES + Integer.BYTES + nameBuff.remaining());
 
-		buff.put((byte) 1);
+		buff.put((byte) 2);
 		buff.putLong(random.nextLong());
 		buff.putInt(nameBuff.remaining());
 		buff.put(nameBuff);
 		buff.flip();
 
 //		a envoyer au serveur MDP
+		server.sendToMDP(buff);
 		return buff;
 	}
 
@@ -180,7 +193,7 @@ public class Context implements FrameVisitor {
 		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(frame.getMsg());
 		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + msgBuff.remaining());
 
-		buff.put((byte) 3);
+		buff.put((byte) 5);
 		buff.put(frame.getLogoutType());
 		buff.putInt(msgBuff.remaining());
 		buff.put(msgBuff);
@@ -209,6 +222,7 @@ public class Context implements FrameVisitor {
 		buff.flip();
 
 //		a envoyer au serveur MDP
+		server.sendToMDP(buff);
 		return buff;
 	}
 
@@ -222,7 +236,7 @@ public class Context implements FrameVisitor {
 
 		ByteBuffer buff = ByteBuffer.allocate(4 * Byte.BYTES + Integer.BYTES + Long.BYTES + ipBuff.remaining());
 
-		buff.put((byte) 2);
+		buff.put((byte) 4);
 		buff.put((byte) 1);
 		buff.put((byte) 0);
 		buff.putInt(frame.getPort());
@@ -241,7 +255,7 @@ public class Context implements FrameVisitor {
 		ByteBuffer errMsgBuff = StandardCharsets.UTF_8.encode(frame.getErrMsg());
 		ByteBuffer buff = ByteBuffer.allocate(3 * Byte.BYTES + Integer.BYTES + errMsgBuff.remaining());
 
-		buff.put((byte) 2);
+		buff.put((byte) 4);
 		buff.put((byte) 1);
 		buff.put((byte) 1);
 		buff.putInt(errMsgBuff.remaining());
@@ -257,7 +271,7 @@ public class Context implements FrameVisitor {
 		System.out.println("private msg cnx refused to server");
 		ByteBuffer buff = ByteBuffer.allocate(3 * Byte.BYTES);
 
-		buff.put((byte) 2);
+		buff.put((byte) 4);
 		buff.put((byte) 1);
 		buff.put((byte) 1);
 		buff.flip();
@@ -272,7 +286,7 @@ public class Context implements FrameVisitor {
 		ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(frame.getDst());
 		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + dstBuff.remaining());
 
-		buff.put((byte) 2);
+		buff.put((byte) 4);
 		buff.put(frame.getStep());
 		buff.putInt(dstBuff.remaining());
 		buff.put(dstBuff);
@@ -294,6 +308,22 @@ public class Context implements FrameVisitor {
 		buff.flip();
 
 //		a envoyer au client
+		return buff;
+	}
+
+	@Override
+	public ByteBuffer visitServerMDPResFrame(ServerMDPResFrame frame) {
+		System.out.println("server mdp res");
+		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + Long.BYTES);
+		
+		buff.put(frame.getOpcode());
+		buff.putLong(frame.getId());
+		buff.flip();
+		
+//		connecter le client ou non
+		
+//		test
+		server.broadcast(buff);
 		return buff;
 	}
 

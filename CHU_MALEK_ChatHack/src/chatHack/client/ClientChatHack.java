@@ -224,14 +224,15 @@ public class ClientChatHack {
 						line = scan.nextLine();
 						
 						ByteBuffer sender = StandardCharsets.UTF_8.encode(login);
-						ByteBuffer bb = StandardCharsets.UTF_8.encode(line);
-						ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + bb.remaining() + sender.remaining());
+						ByteBuffer mdp = StandardCharsets.UTF_8.encode(password);
+						ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + mdp.remaining() + sender.remaining());
 
-						buff.put((byte) 1);
+						buff.put((byte) 2);
+						buff.put((byte) 0);
 						buff.putInt(sender.remaining());
 						buff.put(sender);
-						buff.putInt(bb.remaining());
-						buff.put(bb);
+						buff.putInt(mdp.remaining());
+						buff.put(mdp);
 
 						buff.flip();
 

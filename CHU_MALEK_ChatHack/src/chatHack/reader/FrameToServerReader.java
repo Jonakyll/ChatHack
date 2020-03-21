@@ -49,21 +49,33 @@ public class FrameToServerReader implements Reader<Frame> {
 
 	private void checkOpcode() {
 		opcode = bb.get();
+		System.out.println("opcode " + opcode);
 
 		switch (opcode) {
 		case 0:
-			reader = new LogReader(bb);
+			System.out.println("mdp not ok");
+			reader = new LogResFromMDPReader(opcode, bb);
 			break;
 
 		case 1:
-			reader = new GlobalMsgReader(bb);
+			System.out.println("mdp ok");
+			reader = new LogResFromMDPReader(opcode, bb);
 			break;
 
 		case 2:
-			checkStep();
+			System.out.println("log reader");
+			reader = new LogReader(bb);
 			break;
 
 		case 3:
+			reader = new GlobalMsgReader(bb);
+			break;
+			
+		case 4:
+			checkStep();
+			break;
+			
+		case 5:
 			reader = new LogOutToServerReader(bb);
 			break;
 

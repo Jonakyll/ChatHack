@@ -3,6 +3,8 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
+import chatHack.frame.LogNoPwdToMDPFrame;
+import chatHack.frame.LogWithPwdToMDPFrame;
 import chatHack.frame.SimpleMsgFrame;
 
 public class LogReader implements Reader<Frame> {
@@ -81,13 +83,13 @@ public class LogReader implements Reader<Frame> {
 			throw new IllegalStateException();
 		}
 
-		return new SimpleMsgFrame((byte) 0, "you are connected as " + name);
+//		return new SimpleMsgFrame((byte) 0, "you are connected as " + name);
 
 //		les frames a envoyer au serverMDP
-//		if (code == 0) {
-//			return new LogWithPwdToMDPFrame(name, password);
-//		}
-//		return new LogNoPwdToMDPFrame(name);
+		if (code == 0) {
+			return new LogWithPwdToMDPFrame(name, password);
+		}
+		return new LogNoPwdToMDPFrame(name);
 	}
 
 	@Override

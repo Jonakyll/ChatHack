@@ -53,22 +53,30 @@ public class FrameToClientReader implements Reader<Frame> {
 
 		switch (opcode) {
 		case 0:
-			reader = new SimpleMsgReader(bb);
+			reader = new LogResFromMDPReader(opcode, bb);
 			break;
-
+			
 		case 1:
-			reader = new GlobalMsgReader(bb);
+			reader = new LogResFromMDPReader(opcode, bb);
 			break;
 
 		case 2:
-			checkStep();
+			reader = new SimpleMsgReader(bb);
 			break;
 
 		case 3:
-			reader = new LogOutToClientReader(bb);
+			reader = new GlobalMsgReader(bb);
 			break;
 
 		case 4:
+			checkStep();
+			break;
+
+		case 5:
+			reader = new LogOutToClientReader(bb);
+			break;
+
+		case 6:
 			reader = new SimpleMsgReader(bb);
 			break;
 

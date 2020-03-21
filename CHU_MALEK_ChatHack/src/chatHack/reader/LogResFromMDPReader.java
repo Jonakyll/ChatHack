@@ -13,7 +13,7 @@ public class LogResFromMDPReader implements Reader<Frame> {
 		ERROR
 	};
 	
-	private final ByteBuffer bb;
+//	private final ByteBuffer bb;
 	private State state = State.WAITING;
 	private final byte opcode;
 	private long id;
@@ -22,7 +22,7 @@ public class LogResFromMDPReader implements Reader<Frame> {
 	
 	public LogResFromMDPReader(byte opcode, ByteBuffer bb) {
 		this.opcode = opcode;
-		this.bb = bb;
+//		this.bb = bb;
 		this.idReader = new LongReader(bb);
 	}
 	

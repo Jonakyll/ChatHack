@@ -3,7 +3,6 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
-import chatHack.reader.Reader.ProcessStatus;
 
 public class FrameToClientReader implements Reader<Frame> {
 

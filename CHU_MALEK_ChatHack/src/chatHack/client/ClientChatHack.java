@@ -74,7 +74,8 @@ public class ClientChatHack {
 				sc.configureBlocking(false);
 				sc.connect(socketAddress);
 				uniqueKey = sc.register(selector, SelectionKey.OP_CONNECT);
-
+				
+				System.out.println(sc);
 				System.out.println("Connected to: " + socketAddress.toString());
 				Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
@@ -341,8 +342,8 @@ public class ClientChatHack {
 
 		ClientChatHack client = new ClientChatHack(ip, port, path, login, password, withPassword);
 		client.connectToServer();
-		client.launch();
 		client.sendFrameToServer();
+		client.launch();
 	}
 
 	private static void usage() {

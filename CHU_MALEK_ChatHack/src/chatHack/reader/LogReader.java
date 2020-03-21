@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import chatHack.frame.Frame;
 import chatHack.frame.LogNoPwdToMDPFrame;
 import chatHack.frame.LogWithPwdToMDPFrame;
-import chatHack.frame.SimpleMsgFrame;
 
 public class LogReader implements Reader<Frame> {
 
@@ -13,7 +12,7 @@ public class LogReader implements Reader<Frame> {
 		DONE, WAITING_CODE, WAITING_NAME, WAITING_PASSWORD, ERROR
 	};
 
-	private final ByteBuffer bb;
+//	private final ByteBuffer bb;
 	private State state = State.WAITING_CODE;
 	private byte code;
 	private String name;
@@ -24,7 +23,7 @@ public class LogReader implements Reader<Frame> {
 	private final StringReader passwordReader;
 
 	public LogReader(ByteBuffer bb) {
-		this.bb = bb;
+//		this.bb = bb;
 		this.codeReader = new ByteReader(bb);
 		this.nameReader = new StringReader(bb);
 		this.passwordReader = new StringReader(bb);

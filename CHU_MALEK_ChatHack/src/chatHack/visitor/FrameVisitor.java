@@ -2,7 +2,6 @@ package chatHack.visitor;
 
 import java.nio.ByteBuffer;
 
-import chatHack.frame.Frame;
 import chatHack.frame.GlobalMsgFrame;
 import chatHack.frame.LogNoPwdToMDPFrame;
 import chatHack.frame.LogOutFrame;
@@ -16,8 +15,6 @@ import chatHack.frame.SimpleMsgFrame;
 
 public interface FrameVisitor {
 
-//	Frame visit();
-	
 	ByteBuffer visitGlobalMsgFrame(GlobalMsgFrame frame);
 	
 	ByteBuffer visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame);

@@ -19,7 +19,7 @@ public class Context {
 
 	private final SelectionKey key;
 	private final SocketChannel sc;
-	private final ServerChatHack server;
+//	private final ServerChatHack server;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
 	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
@@ -33,8 +33,8 @@ public class Context {
 	public Context(ServerChatHack server, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
-		this.server = server;
-		this.visitor  = new ChatHackServerVisitor(server);
+//		this.server = server;
+		this.visitor = new ChatHackServerVisitor(key, server);
 	}
 	
 	public SelectionKey getKey() {
@@ -50,18 +50,6 @@ public class Context {
 			case DONE: {
 				Frame frame = (Frame) reader.get();
 				frame.accept(visitor);
-//				ByteBuffer frameBuff = frame.toByteBuffer();
-//				byte opcode = frameBuff.get();
-
-//				if (opcode == 0 || opcode == 1) {
-//					server.sendToMDP(frame);
-//				}
-
-//				pour le chat global
-//				if (opcode == 2) {
-//				server.broadcast(frame);
-//				}
-
 				reader.reset();
 				break;
 			}

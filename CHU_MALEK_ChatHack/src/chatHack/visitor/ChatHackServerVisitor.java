@@ -1,6 +1,7 @@
 package chatHack.visitor;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
@@ -18,9 +19,11 @@ import chatHack.server.ServerChatHack;
 
 public class ChatHackServerVisitor implements FrameVisitor {
 
+	private final SelectionKey key;
 	private final ServerChatHack server;
 	
-	public ChatHackServerVisitor(ServerChatHack server) {
+	public ChatHackServerVisitor(SelectionKey key, ServerChatHack server) {
+		this.key = key;
 		this.server = server;
 	}
 	
@@ -48,16 +51,18 @@ public class ChatHackServerVisitor implements FrameVisitor {
 	public ByteBuffer visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
 		System.out.println("log no pwd to mdp");
 		Random random = new Random();
+		long id = random.nextLong();
 
 		ByteBuffer nameBuff = StandardCharsets.UTF_8.encode(frame.getName());
 		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + Long.BYTES + Integer.BYTES + nameBuff.remaining());
 
 		buff.put((byte) 2);
-		buff.putLong(random.nextLong());
+		buff.putLong(id);
 		buff.putInt(nameBuff.remaining());
 		buff.put(nameBuff);
 		buff.flip();
 
+		server.keepClient(key, id);
 //		a envoyer au serveur MDP
 		server.sendToMDP(buff);
 		return buff;
@@ -83,6 +88,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 	public ByteBuffer visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
 		System.out.println("log with pwd to mdp");
 		Random random = new Random();
+		long id = random.nextLong();
 
 		ByteBuffer nameBuff = StandardCharsets.UTF_8.encode(frame.getName());
 		ByteBuffer passwordBuff = StandardCharsets.UTF_8.encode(frame.getPassword());
@@ -90,13 +96,14 @@ public class ChatHackServerVisitor implements FrameVisitor {
 				Byte.BYTES + Long.BYTES + 2 * Integer.BYTES + nameBuff.remaining() + passwordBuff.remaining());
 
 		buff.put((byte) 1);
-		buff.putLong(random.nextLong());
+		buff.putLong(id);
 		buff.putInt(nameBuff.remaining());
 		buff.put(nameBuff);
 		buff.putInt(passwordBuff.remaining());
 		buff.put(passwordBuff);
 		buff.flip();
 
+		server.keepClient(key, id);
 //		a envoyer au serveur MDP
 		server.sendToMDP(buff);
 		return buff;
@@ -196,6 +203,9 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.putLong(frame.getId());
 		buff.flip();
 		
+//		a envoyer au client
+		server.sendToClient(frame.getId(), buff);
+//		server.broadcast(buff);
 		return buff;
 	}
 }

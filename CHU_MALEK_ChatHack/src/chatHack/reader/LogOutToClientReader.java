@@ -11,7 +11,7 @@ public class LogOutToClientReader implements Reader<Frame> {
 		DONE, WAITING_TYPE, WAITING_MSG, ERROR
 	};
 
-	private final ByteBuffer bb;
+//	private final ByteBuffer bb;
 	private State state = State.WAITING_TYPE;
 	private byte logOutType;
 	private String msg;
@@ -20,7 +20,7 @@ public class LogOutToClientReader implements Reader<Frame> {
 	private final StringReader msgReader;
 
 	public LogOutToClientReader(ByteBuffer bb) {
-		this.bb = bb;
+//		this.bb = bb;
 		this.logOutTypeReader = new ByteReader(bb);
 		this.msgReader = new StringReader(bb);
 	}

@@ -11,7 +11,7 @@ public class GlobalMsgReader implements Reader<Frame> {
 		DONE, WAITING_EXP, WAITING_MSG, ERROR
 	};
 
-	private final ByteBuffer bb;
+//	private final ByteBuffer bb;
 	private State state = State.WAITING_EXP;
 	private String exp;
 	private String msg;
@@ -20,7 +20,7 @@ public class GlobalMsgReader implements Reader<Frame> {
 	private final StringReader msgReader;
 
 	public GlobalMsgReader(ByteBuffer bb) {
-		this.bb = bb;
+//		this.bb = bb;
 		this.expReader = new StringReader(bb);
 		this.msgReader = new StringReader(bb);
 	}

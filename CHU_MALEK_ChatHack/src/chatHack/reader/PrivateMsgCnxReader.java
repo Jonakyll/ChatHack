@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
 import chatHack.frame.PrivateMsgCnxToDstFrame;
-import chatHack.frame.SimpleMsgFrame;
 
 public class PrivateMsgCnxReader implements Reader<Frame> {
 
@@ -12,7 +11,7 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 		DONE, WAITING, ERROR
 	};
 
-	private final ByteBuffer bb;
+//	private final ByteBuffer bb;
 	private State state = State.WAITING;
 	private byte step;
 	private String dst;
@@ -20,7 +19,7 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 	private final StringReader dstReader;
 
 	public PrivateMsgCnxReader(ByteBuffer bb) {
-		this.bb = bb;
+//		this.bb = bb;
 		this.dstReader = new StringReader(bb);
 	}
 

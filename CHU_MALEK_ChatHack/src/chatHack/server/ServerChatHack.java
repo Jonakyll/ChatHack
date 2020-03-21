@@ -12,10 +12,10 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-
-import chatHack.frame.Frame;
 
 public class ServerChatHack {
 
@@ -29,6 +29,8 @@ public class ServerChatHack {
 	private SocketAddress socketAdress;
 	private final SocketChannel sc;
 	private SelectionKey MDPKey;
+
+	private final Map<Long, SelectionKey> clients = new HashMap<>();
 
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
@@ -119,22 +121,37 @@ public class ServerChatHack {
 				continue;
 			}
 
+//			probleme seul un client recoit les messages
 			ctx.queueFrame(buff);
-			buff.flip();
 		}
 	}
 
+	public void keepClient(SelectionKey key, long id) {
+		this.clients.put(id, key);
+	}
+
 	public void sendToMDP(ByteBuffer buff) {
-		for (SelectionKey key : selector.keys()) {
+		Context ctx = (Context) MDPKey.attachment();
 
-			Context ctx = (Context) key.attachment();
-
-			if (ctx == null || ctx.getKey() != MDPKey) {
-				continue;
-			}
-			ctx.queueFrame(buff);
-			buff.flip();
+		if (ctx == null) {
+			return;
 		}
+		ctx.queueFrame(buff);
+	}
+
+	public void sendToClient(long id, ByteBuffer buff) {
+		SelectionKey key = this.clients.get(id);
+
+		if (key == null) {
+			return;
+		}
+		Context ctx = (Context) key.attachment();
+
+		if (ctx == null) {
+			return;
+		}
+		ctx.queueFrame(buff);
+
 	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {

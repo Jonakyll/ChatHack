@@ -11,14 +11,14 @@ public class SimpleMsgReader implements Reader<Frame> {
 		DONE, WAITING, ERROR
 	};
 
-	private final ByteBuffer bb;
+//	private final ByteBuffer bb;
 	private State state = State.WAITING;
 	private String msg;
 
 	private final StringReader msgReader;
 
 	public SimpleMsgReader(ByteBuffer bb) {
-		this.bb = bb;
+//		this.bb = bb;
 		this.msgReader = new StringReader(bb);
 	}
 

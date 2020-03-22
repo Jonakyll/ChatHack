@@ -52,8 +52,9 @@ public class ClientChatHack {
 	private boolean connected = false;
 
 	private final FrameVisitor visitor = new ChatHackClientVIsitor(this);
-	
-	private final Map<String, Long> clients = new HashMap<>();
+
+	// private final Map<String, Long> clients = new HashMap<>();
+	private final SynchronizedPrivateClients clients = new SynchronizedPrivateClients();
 
 	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
 			throws IOException {
@@ -74,12 +75,12 @@ public class ClientChatHack {
 
 			try {
 				socketAddress = new InetSocketAddress(ip, port);
+				System.out.println(socketAddress.toString());
 
 				sc.configureBlocking(false);
 				sc.connect(socketAddress);
 				uniqueKey = sc.register(selector, SelectionKey.OP_CONNECT);
-				
-				System.out.println(sc);
+
 				System.out.println("Connected to: " + socketAddress.toString());
 				Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
@@ -246,13 +247,13 @@ public class ClientChatHack {
 	public boolean isConnected() {
 		return connected;
 	}
-	
+
 	public void disconnect() {
 		closed = true;
 		silentlyClose();
 		cnxThread.interrupt();
-		mainThread.interrupt();
 		readThread.interrupt();
+		mainThread.interrupt();
 	}
 
 	private void connectToServer() {
@@ -292,37 +293,37 @@ public class ClientChatHack {
 		});
 		cnxThread.start();
 	}
-	
+
 	private void sendFrameToServer() {
 		readThread = new Thread(() -> {
 
 			while (!Thread.interrupted()) {
-//				if (!connected) {
-//					mainThread.interrupt();
-//					return;
-//				}
+				// if (!connected) {
+				// mainThread.interrupt();
+				// return;
+				// }
 				System.out.println("you are connected");
 				try (Scanner scan = new Scanner(System.in)) {
 					String line;
 
-					while (scan.hasNextLine()) {
+					while (scan.hasNextLine() == !closed) {
 						// il faut gerer tous les paquets possibles venant du client
 
 						line = scan.nextLine();
-						
-//						msg global
+
+						// msg global
 						if (line.startsWith("/ ") || line.startsWith("@ ")) {
 							sendGlobalMsg(line.substring(2));
 						}
-						
-//						msg prive
+
+						// msg prive
 						if (line.startsWith("@")) {
 							String[] tokens = line.split(" ", 2);
 							String dst = tokens[0].substring(1);
 							sendPrivateMsg(dst, tokens[1]);
 						}
-						
-//						logout
+
+						// logout
 						if (line.equals("logout")) {
 							sendLogout();
 						}
@@ -334,40 +335,76 @@ public class ClientChatHack {
 		});
 		readThread.start();
 	}
-	
+
 	private void sendGlobalMsg(String msg) throws InterruptedException {
 		ByteBuffer loginBuff = StandardCharsets.UTF_8.encode(login);
 		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
-		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + loginBuff.remaining() + msgBuff.remaining());
-		
+		ByteBuffer buff = ByteBuffer
+				.allocate(Byte.BYTES + 2 * Integer.BYTES + loginBuff.remaining() + msgBuff.remaining());
+
 		buff.put((byte) 3);
 		buff.putInt(loginBuff.remaining());
 		buff.put(loginBuff);
 		buff.putInt(msgBuff.remaining());
 		buff.put(msgBuff);
 		buff.flip();
-		
+
 		queue.put(buff);
 		selector.wakeup();
 	}
-	
-	private void sendPrivateMsg(String dst, String msg) {
+
+	private void sendPrivateMsg(String dst, String msg) throws InterruptedException {
+		ByteBuffer buff;
 		if (!this.clients.containsKey(dst)) {
-//			envoyer une demande de connexion privee au serveur
+			// envoyer une demande de connexion privee au serveur
+			
+			ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(dst);
+			buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + dstBuff.remaining());
+			
+			buff.put((byte) 4);
+			buff.put((byte) 0);
+			buff.putInt(dstBuff.remaining());
+			buff.put(dstBuff);
+			buff.flip();
+			
+			queue.put(buff);
+			selector.wakeup();
+		} else {
+			// envoyer le msg directement au client dst
+			
 		}
-		
-//		envoyer le msg directement au client dst
+
 	}
-	
+
 	private void sendLogout() throws InterruptedException {
 		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES);
-		
+
 		buff.put((byte) 5);
 		buff.put((byte) 0);
 		buff.flip();
-		
+
 		queue.put(buff);
 		selector.wakeup();
+	}
+	
+	public void sendPrivateCnxRes() {
+		try (Scanner scan = new Scanner(System.in)) {
+			System.out.println("0     = accept");
+			System.out.println("other = decline");
+			byte res;
+			ByteBuffer buff;
+			
+			res = scan.nextByte();
+			
+			if (res == 0) {
+//				accepter la demande de connexion privee
+				buff = ByteBuffer.allocate(4 * Byte.BYTES + Integer.BYTES + Long.BYTES);
+				
+			} else {
+//				refuser la demande de connexion privee
+				
+			}
+		}
 	}
 
 	public static void main(String[] args) throws IOException {

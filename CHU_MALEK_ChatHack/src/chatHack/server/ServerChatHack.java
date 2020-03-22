@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import chatHack.client.SynchronizedPrivateClients;
+
 public class ServerChatHack {
 
 	private static Logger logger = Logger.getLogger(ServerChatHack.class.getName());
@@ -30,9 +32,13 @@ public class ServerChatHack {
 	private final SocketChannel sc;
 	private SelectionKey MDPKey;
 
-	private final Map<Long, SelectionKey> clients = new HashMap<>();
-	private final Object monitor = new Object();
-
+//	private final Map<Long, SelectionKey> clients = new HashMap<>();
+//	private final Object monitor = new Object();
+	
+//	j'ai pas trouve mieux comme solution pour pouvoir envoyer les demandes de connexion privee
+	private final SynchronizedClients<String> clients = new SynchronizedClients<>();
+	private final SynchronizedClients<Long> clients2 = new SynchronizedClients<>();
+	
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
 		this.MDPPort = MDPPort;
@@ -114,8 +120,6 @@ public class ServerChatHack {
 	}
 
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
-		synchronized (monitor) {
-
 			for (SelectionKey k : this.clients.values()) {
 
 				Context ctx = (Context) k.attachment();
@@ -128,13 +132,14 @@ public class ServerChatHack {
 					ctx.queueFrame(buff.duplicate());
 				}
 			}
-		}
 	}
 
-	public void addClient(SelectionKey key, long id) {
-		synchronized (monitor) {
-			this.clients.put(id, key);
-		}
+	public void addClient(SelectionKey key, String name) {
+		this.clients.put(name, key);
+	}
+	
+	public void addClient2(SelectionKey key, long id) {
+		this.clients2.put(id, key);
 	}
 
 	public void sendToMDP(ByteBuffer buff) {
@@ -147,39 +152,57 @@ public class ServerChatHack {
 	}
 
 	public void sendToClient(long id, ByteBuffer buff) {
-		synchronized (monitor) {
+		SelectionKey key = this.clients2.get(id);
 
-			SelectionKey key = this.clients.get(id);
-
-			if (key == null) {
-				return;
-			}
-			Context ctx = (Context) key.attachment();
-
-			if (ctx == null) {
-				return;
-			}
-			ctx.queueFrame(buff);
+		if (key == null) {
+			return;
 		}
+		Context ctx = (Context) key.attachment();
+
+		if (ctx == null) {
+			return;
+		}
+		ctx.queueFrame(buff);
 	}
 
 //	probleme de concurrence
 	public void kickClient(SelectionKey key, ByteBuffer buff) {
-		synchronized (monitor) {
-
-			for (long l : clients.keySet()) {
-				if (clients.get(l) == key) {
-					clients.remove(l);
-				}
+		for (String name : clients.keySet()) {
+			if (clients.get(name) == key) {
+				clients.remove(name);
 			}
-			Context ctx = (Context) key.attachment();
-
-			if (ctx == null) {
-				return;
-			}
-			ctx.queueFrame(buff);
-			ctx.close();
 		}
+		
+		for (long id : clients2.keySet()) {
+			if (clients2.get(id) == key) {
+				clients2.remove(id);
+			}
+		}
+		
+		Context ctx = (Context) key.attachment();
+
+		if (ctx == null) {
+			return;
+		}
+		ctx.queueFrame(buff);
+		ctx.close();
+	}
+	
+	public void sendToDst(String dst, ByteBuffer buff) {
+		SelectionKey key = clients.get(dst);
+		
+		if (key == null) {
+			return;
+		}
+		
+		Context ctx = (Context) key.attachment();
+		
+		if (ctx == null) {
+			return;
+		}
+		
+		ctx.queueFrame(buff);
+		
 	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {

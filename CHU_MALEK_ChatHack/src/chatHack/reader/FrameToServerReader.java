@@ -49,7 +49,7 @@ public class FrameToServerReader implements Reader<Frame> {
 
 	private void checkOpcode() {
 		opcode = bb.get();
-
+		
 		switch (opcode) {
 		case 0:
 			reader = new LogResFromMDPReader(opcode, bb);

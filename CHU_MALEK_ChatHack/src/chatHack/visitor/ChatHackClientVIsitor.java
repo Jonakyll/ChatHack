@@ -68,6 +68,7 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 	@Override
 	public ByteBuffer visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
 		System.out.println(frame);
+		client.sendPrivateCnxRes();
 		return null;
 	}
 

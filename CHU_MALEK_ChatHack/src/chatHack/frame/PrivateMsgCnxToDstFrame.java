@@ -27,7 +27,7 @@ public class PrivateMsgCnxToDstFrame implements Frame {
 	
 	@Override
 	public String toString() {
-		return dst + " wants to open a private channel with you.";
+		return "someone wants to start a private conversation with you.";
 	}
 
 	@Override

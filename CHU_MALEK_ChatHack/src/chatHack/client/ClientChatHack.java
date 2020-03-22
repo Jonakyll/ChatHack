@@ -8,6 +8,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -50,6 +52,8 @@ public class ClientChatHack {
 	private boolean connected = false;
 
 	private final FrameVisitor visitor = new ChatHackClientVIsitor(this);
+	
+	private final Map<String, Long> clients = new HashMap<>();
 
 	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
 			throws IOException {
@@ -297,22 +301,15 @@ public class ClientChatHack {
 						// il faut gerer tous les paquets possibles venant du client
 
 						line = scan.nextLine();
-
-						ByteBuffer sender = StandardCharsets.UTF_8.encode(login);
-						ByteBuffer mdp = StandardCharsets.UTF_8.encode(line);
-						ByteBuffer buff = ByteBuffer
-								.allocate(Byte.BYTES + 2 * Integer.BYTES + mdp.remaining() + sender.remaining());
-
-						buff.put((byte) 3);
-						buff.putInt(sender.remaining());
-						buff.put(sender);
-						buff.putInt(mdp.remaining());
-						buff.put(mdp);
-
-						buff.flip();
-
-						queue.put(buff);
-						selector.wakeup();
+						if (line.startsWith("/ ") || line.startsWith("@ ")) {
+							sendGlobalMsg(line.substring(2));
+						}
+						
+						if (line.startsWith("@")) {
+							String[] tokens = line.split(" ", 2);
+							String dst = tokens[0].substring(1);
+							sendPrivateMsg(dst, tokens[1]);
+						}
 					}
 				} catch (InterruptedException e) {
 					return;
@@ -320,6 +317,30 @@ public class ClientChatHack {
 			}
 		});
 		readThread.start();
+	}
+	
+	private void sendGlobalMsg(String msg) throws InterruptedException {
+		ByteBuffer loginBuff = StandardCharsets.UTF_8.encode(login);
+		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
+		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + loginBuff.remaining() + msgBuff.remaining());
+		
+		buff.put((byte) 3);
+		buff.putInt(loginBuff.remaining());
+		buff.put(loginBuff);
+		buff.putInt(msgBuff.remaining());
+		buff.put(msgBuff);
+		buff.flip();
+		
+		queue.put(buff);
+		selector.wakeup();
+	}
+	
+	private void sendPrivateMsg(String dst, String msg) {
+		if (!this.clients.containsKey(dst)) {
+//			envoyer une demande de connexion privee au serveur
+		}
+		
+//		envoyer le msg directement au client dst
 	}
 
 	public static void main(String[] args) throws IOException {

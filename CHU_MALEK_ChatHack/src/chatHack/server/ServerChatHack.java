@@ -112,17 +112,18 @@ public class ServerChatHack {
 		}
 	}
 
-	public void broadcast(ByteBuffer buff) {
-		for (SelectionKey key : selector.keys()) {
+	public void broadcast(SelectionKey key, ByteBuffer buff) {
+		for (SelectionKey k : this.clients.values()) {
 
-			Context ctx = (Context) key.attachment();
+			Context ctx = (Context) k.attachment();
 
 			if (ctx == null) {
 				continue;
 			}
 
-//			probleme seul un client recoit les messages
-			ctx.queueFrame(buff);
+			if (k != key) {
+				ctx.queueFrame(buff.duplicate());
+			}
 		}
 	}
 
@@ -151,8 +152,11 @@ public class ServerChatHack {
 			return;
 		}
 		ctx.queueFrame(buff);
-
 	}
+	
+//	public void kickClient(SelectionKey key) {
+//		this.clients.remove(key);
+//	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {
 		if (args.length != 3) {

@@ -43,7 +43,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.flip();
 
 //		a envoyer a tout le monde
-		server.broadcast(buff);
+		server.broadcast(key, buff);
 		return buff;
 	}
 
@@ -80,7 +80,9 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.put(msgBuff);
 		buff.flip();
 
+//		server.kickClient(key);
 //		a envoyer au client qui se deconnecte
+		
 		return buff;
 	}
 

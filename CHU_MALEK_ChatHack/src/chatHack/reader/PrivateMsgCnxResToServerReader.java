@@ -13,7 +13,7 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		DONE, WAITING_RES_TYPE, WAITING_PORT, WAITING_TOKEN, WAITING_IP_VERSION, WAITING_IP, ERROR,
 	};
 
-//	private final ByteBuffer bb;
+	private final ByteBuffer bb;
 	private State state = State.WAITING_RES_TYPE;
 	private byte resType;
 	private int port;
@@ -28,7 +28,7 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 	private IpReader ipReader;
 
 	public PrivateMsgCnxResToServerReader(ByteBuffer bb) {
-//		this.bb = bb;
+		this.bb = bb;
 		this.resTypeReader = new ByteReader(bb);
 		this.portReader = new IntReader(bb);
 		this.tokenReader = new LongReader(bb);

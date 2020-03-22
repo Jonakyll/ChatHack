@@ -12,18 +12,6 @@ public class SimpleMsgFrame implements Frame {
 		this.msg = msg;
 	}
 	
-//	public ByteBuffer toByteBuffer() {
-//		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
-//		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + Integer.BYTES + msgBuff.remaining());
-//		
-//		buff.put(opcode);
-//		buff.putInt(msgBuff.remaining());
-//		buff.put(msgBuff);
-//		buff.flip();
-//		
-//		return buff;
-//	}
-	
 	@Override
 	public String toString() {
 		return msg;

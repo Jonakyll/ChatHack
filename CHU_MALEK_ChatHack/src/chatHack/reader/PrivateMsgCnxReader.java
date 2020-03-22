@@ -8,18 +8,21 @@ import chatHack.frame.PrivateMsgCnxToDstFrame;
 public class PrivateMsgCnxReader implements Reader<Frame> {
 
 	private enum State {
-		DONE, WAITING, ERROR
+		DONE, WAITING_SRC, WAITING_DST, ERROR
 	};
 
 //	private final ByteBuffer bb;
-	private State state = State.WAITING;
+	private State state = State.WAITING_SRC;
 	private byte step;
+	private String src;
 	private String dst;
 
+	private final StringReader srcReader;
 	private final StringReader dstReader;
 
 	public PrivateMsgCnxReader(ByteBuffer bb) {
 //		this.bb = bb;
+		this.srcReader = new StringReader(bb);
 		this.dstReader = new StringReader(bb);
 	}
 
@@ -31,7 +34,15 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 
 		switch (state) {
 
-		case WAITING:
+		case WAITING_SRC:
+			ProcessStatus srcStatus = srcReader.process();
+			if (srcStatus != ProcessStatus.DONE) {
+				return srcStatus;
+			}
+			src = srcReader.get();
+			state = State.WAITING_DST;
+
+		case WAITING_DST:
 			ProcessStatus dstStatus = dstReader.process();
 			if (dstStatus != ProcessStatus.DONE) {
 				return dstStatus;
@@ -39,7 +50,7 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 			dst = dstReader.get();
 			state = State.DONE;
 			return ProcessStatus.DONE;
-
+			
 		default:
 			throw new AssertionError();
 		}
@@ -50,16 +61,16 @@ public class PrivateMsgCnxReader implements Reader<Frame> {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		return new PrivateMsgCnxToDstFrame(step, dst);
+		return new PrivateMsgCnxToDstFrame(step, src, dst);
 
 		// verifier le cas ou la trame est mauvaise
-//		return new SimpleMsgFrame((byte) 4, "your request couldn't reach your recipient");
 	}
 
 	@Override
 	public void reset() {
+		srcReader.reset();
 		dstReader.reset();
-		state = State.WAITING;
+		state = State.WAITING_SRC;
 	}
 
 }

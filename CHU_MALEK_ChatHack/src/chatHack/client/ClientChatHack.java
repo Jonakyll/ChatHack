@@ -10,6 +10,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -75,7 +76,7 @@ public class ClientChatHack {
 
 			try {
 				socketAddress = new InetSocketAddress(ip, port);
-				System.out.println(socketAddress.toString());
+				System.out.println("SOCKETADDRESS: " + socketAddress.toString());
 
 				sc.configureBlocking(false);
 				sc.connect(socketAddress);
@@ -357,21 +358,24 @@ public class ClientChatHack {
 		ByteBuffer buff;
 		if (!this.clients.containsKey(dst)) {
 			// envoyer une demande de connexion privee au serveur
-			
+
+			ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(login);
 			ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(dst);
-			buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + dstBuff.remaining());
-			
+			buff = ByteBuffer.allocate(2 * Byte.BYTES + 2 * Integer.BYTES + srcBuff.remaining() + dstBuff.remaining());
+
 			buff.put((byte) 4);
 			buff.put((byte) 0);
+			buff.putInt(srcBuff.remaining());
+			buff.put(srcBuff);
 			buff.putInt(dstBuff.remaining());
 			buff.put(dstBuff);
 			buff.flip();
-			
+
 			queue.put(buff);
 			selector.wakeup();
 		} else {
 			// envoyer le msg directement au client dst
-			
+
 		}
 
 	}
@@ -386,25 +390,57 @@ public class ClientChatHack {
 		queue.put(buff);
 		selector.wakeup();
 	}
-	
-	public void sendPrivateCnxRes() {
+
+	public void sendPrivateCnxRes(String src) throws InterruptedException {
+		// readThread.interrupt();
 		try (Scanner scan = new Scanner(System.in)) {
 			System.out.println("0     = accept");
 			System.out.println("other = decline");
-			byte res;
+			
+			Random random = new Random();
+			String res;
+			int port;
 			ByteBuffer buff;
-			
-			res = scan.nextByte();
-			
-			if (res == 0) {
-//				accepter la demande de connexion privee
-				buff = ByteBuffer.allocate(4 * Byte.BYTES + Integer.BYTES + Long.BYTES);
-				
+
+			res = scan.nextLine();
+			if (res.equals("0")) {
+				// accepter la demande de connexion privee
+				// l'adresse ip sera une string mtn
+				System.out.println("on wich port?");
+
+				port = scan.nextInt();
+
+				String address = socketAddress.toString();
+				String ipString = address.split("/")[1].split(":")[0];
+				ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(src);
+				ByteBuffer ipBuff = StandardCharsets.UTF_8.encode(ipString);
+
+				buff = ByteBuffer.allocate(
+						3 * Byte.BYTES + 3 * Integer.BYTES + Long.BYTES + srcBuff.remaining() + ipBuff.remaining());
+
+				buff.put((byte) 4);
+				buff.put((byte) 1);
+				buff.put((byte) 0);
+				buff.putInt(srcBuff.remaining());
+				buff.put(srcBuff);
+				buff.putInt(port);
+				buff.putLong(random.nextLong());
+				buff.putInt(ipBuff.remaining());
+				buff.put(ipBuff);
+
 			} else {
-//				refuser la demande de connexion privee
-				
+				// refuser la demande de connexion privee
+				buff = ByteBuffer.allocate(3 * Byte.BYTES);
+				buff.put((byte) 4);
+				buff.put((byte) 1);
+				buff.put((byte) 1);
 			}
+
+			buff.flip();
+			queue.put(buff);
+			selector.wakeup();
 		}
+		 readThread.start();
 	}
 
 	public static void main(String[] args) throws IOException {

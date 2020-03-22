@@ -12,21 +12,6 @@ public class GlobalMsgFrame implements Frame {
 		this.msg = msg;
 	}
 	
-//	public ByteBuffer toByteBuffer() {
-//		ByteBuffer expBuff = StandardCharsets.UTF_8.encode(exp);
-//		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
-//		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + 2 * Integer.BYTES + expBuff.remaining() + msgBuff.remaining());
-//		
-//		buff.put((byte) 1);
-//		buff.putInt(expBuff.remaining());
-//		buff.put(expBuff);
-//		buff.putInt(msgBuff.remaining());
-//		buff.put(msgBuff);
-//		buff.flip();
-//		
-//		return buff;
-//	}
-	
 	@Override
 	public String toString() {
 		return exp + ": " + msg;

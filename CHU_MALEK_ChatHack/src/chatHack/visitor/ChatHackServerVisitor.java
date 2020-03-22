@@ -62,7 +62,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.put(nameBuff);
 		buff.flip();
 
-		server.keepClient(key, id);
+		server.addClient(key, id);
 //		a envoyer au serveur MDP
 		server.sendToMDP(buff);
 		return buff;
@@ -80,9 +80,8 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.put(msgBuff);
 		buff.flip();
 
-//		server.kickClient(key);
 //		a envoyer au client qui se deconnecte
-		
+		server.kickClient(key, buff);
 		return buff;
 	}
 
@@ -105,7 +104,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.put(passwordBuff);
 		buff.flip();
 
-		server.keepClient(key, id);
+		server.addClient(key, id);
 //		a envoyer au serveur MDP
 		server.sendToMDP(buff);
 		return buff;

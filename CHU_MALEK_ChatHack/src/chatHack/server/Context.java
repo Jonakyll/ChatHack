@@ -92,7 +92,7 @@ public class Context {
 		}
 	}
 
-	private void silentlyClose() {
+	public void silentlyClose() {
 		try {
 			sc.close();
 		} catch (IOException e) {
@@ -125,6 +125,8 @@ public class Context {
 		updateInterestOps();
 	}
 
-	
+	public void close() {
+		closed = true;
+	}
 
 }

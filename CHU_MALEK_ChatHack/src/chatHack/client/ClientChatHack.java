@@ -246,6 +246,14 @@ public class ClientChatHack {
 	public boolean isConnected() {
 		return connected;
 	}
+	
+	public void disconnect() {
+		closed = true;
+		silentlyClose();
+		cnxThread.interrupt();
+		mainThread.interrupt();
+		readThread.interrupt();
+	}
 
 	private void connectToServer() {
 		cnxThread = new Thread(() -> {
@@ -301,14 +309,22 @@ public class ClientChatHack {
 						// il faut gerer tous les paquets possibles venant du client
 
 						line = scan.nextLine();
+						
+//						msg global
 						if (line.startsWith("/ ") || line.startsWith("@ ")) {
 							sendGlobalMsg(line.substring(2));
 						}
 						
+//						msg prive
 						if (line.startsWith("@")) {
 							String[] tokens = line.split(" ", 2);
 							String dst = tokens[0].substring(1);
 							sendPrivateMsg(dst, tokens[1]);
+						}
+						
+//						logout
+						if (line.equals("logout")) {
+							sendLogout();
 						}
 					}
 				} catch (InterruptedException e) {
@@ -341,6 +357,17 @@ public class ClientChatHack {
 		}
 		
 //		envoyer le msg directement au client dst
+	}
+	
+	private void sendLogout() throws InterruptedException {
+		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES);
+		
+		buff.put((byte) 5);
+		buff.put((byte) 0);
+		buff.flip();
+		
+		queue.put(buff);
+		selector.wakeup();
 	}
 
 	public static void main(String[] args) throws IOException {

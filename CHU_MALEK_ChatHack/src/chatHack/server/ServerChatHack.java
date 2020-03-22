@@ -31,6 +31,7 @@ public class ServerChatHack {
 	private SelectionKey MDPKey;
 
 	private final Map<Long, SelectionKey> clients = new HashMap<>();
+	private final Object monitor = new Object();
 
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
@@ -113,22 +114,27 @@ public class ServerChatHack {
 	}
 
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
-		for (SelectionKey k : this.clients.values()) {
+		synchronized (monitor) {
 
-			Context ctx = (Context) k.attachment();
+			for (SelectionKey k : this.clients.values()) {
 
-			if (ctx == null) {
-				continue;
-			}
+				Context ctx = (Context) k.attachment();
 
-			if (k != key) {
-				ctx.queueFrame(buff.duplicate());
+				if (ctx == null) {
+					continue;
+				}
+
+				if (k != key) {
+					ctx.queueFrame(buff.duplicate());
+				}
 			}
 		}
 	}
 
-	public void keepClient(SelectionKey key, long id) {
-		this.clients.put(id, key);
+	public void addClient(SelectionKey key, long id) {
+		synchronized (monitor) {
+			this.clients.put(id, key);
+		}
 	}
 
 	public void sendToMDP(ByteBuffer buff) {
@@ -141,22 +147,40 @@ public class ServerChatHack {
 	}
 
 	public void sendToClient(long id, ByteBuffer buff) {
-		SelectionKey key = this.clients.get(id);
+		synchronized (monitor) {
 
-		if (key == null) {
-			return;
-		}
-		Context ctx = (Context) key.attachment();
+			SelectionKey key = this.clients.get(id);
 
-		if (ctx == null) {
-			return;
+			if (key == null) {
+				return;
+			}
+			Context ctx = (Context) key.attachment();
+
+			if (ctx == null) {
+				return;
+			}
+			ctx.queueFrame(buff);
 		}
-		ctx.queueFrame(buff);
 	}
-	
-//	public void kickClient(SelectionKey key) {
-//		this.clients.remove(key);
-//	}
+
+//	probleme de concurrence
+	public void kickClient(SelectionKey key, ByteBuffer buff) {
+		synchronized (monitor) {
+
+			for (long l : clients.keySet()) {
+				if (clients.get(l) == key) {
+					clients.remove(l);
+				}
+			}
+			Context ctx = (Context) key.attachment();
+
+			if (ctx == null) {
+				return;
+			}
+			ctx.queueFrame(buff);
+			ctx.close();
+		}
+	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {
 		if (args.length != 3) {

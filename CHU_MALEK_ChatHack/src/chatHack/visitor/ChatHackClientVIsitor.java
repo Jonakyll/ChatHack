@@ -24,9 +24,7 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 
 	@Override
 	public ByteBuffer visitGlobalMsgFrame(GlobalMsgFrame frame) {
-		if (client.isConnected()) {
-			System.out.println(frame);
-		}
+		System.out.println(frame);
 		return null;
 	}
 
@@ -39,6 +37,7 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 	@Override
 	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
 		System.out.println(frame);
+		client.disconnect();
 		return null;
 	}
 

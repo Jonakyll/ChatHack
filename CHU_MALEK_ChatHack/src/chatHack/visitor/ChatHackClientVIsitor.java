@@ -1,5 +1,6 @@
 package chatHack.visitor;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import chatHack.client.ClientChatHack;
@@ -50,8 +51,12 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 
 	@Override
 	public ByteBuffer visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
-		System.out.println(frame);
-		client.connectToClient(frame.getDst(), frame.getIp(), frame.getPort(), frame.getToken());
+		try {
+			System.out.println(frame);
+			client.connectToClient(frame.getDst(), frame.getIp(), frame.getPort(), frame.getToken());
+		} catch (IOException e) {
+			return null;
+		}
 		return null;
 	}
 
@@ -82,15 +87,19 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 
 	@Override
 	public ByteBuffer visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
-		if (client.withPassword() && frame.getOpcode() == 1) {
-			System.out.println("CONNECTED");
-			client.connect();
+		try {
+			if ((client.withPassword() && frame.getOpcode() == 1)
+					|| (!client.withPassword() && frame.getOpcode() == 0)) {
+				System.out.println("CONNECTED");
+				client.connect();
+			} else {
+				client.sendLogout();
+			}
+			return null;
+		} catch (InterruptedException e) {
+			return null;
 		}
-		if (!client.withPassword() && frame.getOpcode() == 0) {
-			System.out.println("CONNECTED");
-			client.connect();
-		}
-		return null;
+
 	}
 
 	@Override

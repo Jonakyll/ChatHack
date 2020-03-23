@@ -97,6 +97,10 @@ public class FrameToClientReader implements Reader<Frame> {
 			case 1:
 				reader = new PrivateMsgCnxResToClientReader(bb);
 				break;
+				
+			case 2:
+				reader = new PrivateMsgReader(bb);
+				break;
 
 			default:
 				throw new AssertionError();

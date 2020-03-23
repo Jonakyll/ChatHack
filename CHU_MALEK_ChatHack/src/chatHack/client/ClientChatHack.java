@@ -6,6 +6,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import java.util.logging.Logger;
 import chatHack.frame.Frame;
 import chatHack.reader.FrameToClientReader;
 import chatHack.reader.Reader;
+import chatHack.server.Context;
 import chatHack.visitor.ChatHackClientVIsitor;
 import chatHack.visitor.FrameVisitor;
 
@@ -56,6 +58,13 @@ public class ClientChatHack {
 
 	// private final Map<String, Long> clients = new HashMap<>();
 	private final SynchronizedPrivateClients clients = new SynchronizedPrivateClients();
+
+	private final Map<ServerSocketChannel, Long> channels = new HashMap<>();
+
+	private final BlockingQueue<String> sources = new LinkedBlockingQueue<>();
+	private boolean cnxRequest = false;
+
+	private final Object monitor = new Object();
 
 	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
 			throws IOException {
@@ -113,6 +122,11 @@ public class ClientChatHack {
 
 	private void processSelectedKeys(Set<SelectionKey> selectedKeys) throws IOException {
 		for (SelectionKey key : selectedKeys) {
+			// accepter la cnx d'un client en prive
+			// if (key.isValid() && key.isAcceptable()) {
+			// doAccept(key);
+			// }
+
 			if (key.isValid() && key.isConnectable()) {
 				doConnect();
 			}
@@ -296,49 +310,109 @@ public class ClientChatHack {
 	}
 
 	private void sendFrameToServer() {
-		readThread = new Thread(() -> {
+		synchronized (monitor) {
 
-			while (!Thread.interrupted()) {
-				// if (!connected) {
-				// mainThread.interrupt();
-				// return;
-				// }
-				System.out.println("you are connected");
-				try (Scanner scan = new Scanner(System.in)) {
-					String line;
+			readThread = new Thread(() -> {
 
-					while (scan.hasNextLine() && !closed) {
-						// il faut gerer tous les paquets possibles venant du client
+				while (!Thread.interrupted()) {
+					// if (!connected) {
+					// mainThread.interrupt();
+					// return;
+					// }
+					System.out.println("you are connected");
+					try (Scanner scan = new Scanner(System.in)) {
+						String line;
 
-						line = scan.nextLine();
+						while (scan.hasNextLine() && !closed) {
+							// il faut gerer tous les paquets possibles venant du client
 
-						// msg global
-						if (line.startsWith("/ ") || line.startsWith("@ ")) {
-							sendGlobalMsg(line.substring(2));
+							if (cnxRequest && !sources.isEmpty()) {
+								Random random = new Random();
+								String res;
+								int port;
+								ByteBuffer buff;
+
+								res = scan.nextLine();
+								if (res.equals("0")) {
+									// accepter la demande de connexion privee
+									// l'adresse ip sera une string mtn
+									System.out.println("on which port?");
+
+									port = scan.nextInt();
+									long token = random.nextLong();
+									String address = socketAddress.toString();
+									String ipString = address.split("/")[1].split(":")[0];
+									ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(sources.poll());
+									ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(login);
+									ByteBuffer ipBuff = StandardCharsets.UTF_8.encode(ipString);
+
+									buff = ByteBuffer.allocate(3 * Byte.BYTES + 4 * Integer.BYTES + Long.BYTES
+											+ srcBuff.remaining() + dstBuff.remaining() + ipBuff.remaining());
+
+									buff.put((byte) 4);
+									buff.put((byte) 1);
+									buff.put((byte) 0);
+									buff.putInt(srcBuff.remaining());
+									buff.put(srcBuff);
+									buff.putInt(dstBuff.remaining());
+									buff.put(dstBuff);
+									buff.putInt(port);
+									buff.putLong(token);
+									buff.putInt(ipBuff.remaining());
+									buff.put(ipBuff);
+
+									// ouvrir un channel de discussion prive
+									openPrivateChannel(ipString, port, token);
+
+								} else {
+									// refuser la demande de connexion privee
+									buff = ByteBuffer.allocate(3 * Byte.BYTES);
+									buff.put((byte) 4);
+									buff.put((byte) 1);
+									buff.put((byte) 1);
+								}
+
+								buff.flip();
+								queue.put(buff);
+								selector.wakeup();
+								cnxRequest = false;
+
+							} else {
+
+								line = scan.nextLine();
+
+								// msg global
+								if (line.startsWith("/ ") || line.startsWith("@ ")) {
+									sendGlobalMsg(line.substring(2));
+								}
+
+								// msg prive
+								if (line.startsWith("@")) {
+									String[] tokens = line.split(" ", 2);
+									String dst = tokens[0].substring(1);
+									sendPrivateMsg(dst, tokens[1]);
+								}
+
+								// logout
+								if (line.equals("logout")) {
+									sendLogout();
+									return;
+								}
+								
+							}
 						}
-
-						// msg prive
-						if (line.startsWith("@")) {
-							String[] tokens = line.split(" ", 2);
-							String dst = tokens[0].substring(1);
-							sendPrivateMsg(dst, tokens[1]);
-						}
-
-						// logout
-						if (line.equals("logout")) {
-							sendLogout();
-						}
+					} catch (InterruptedException e) {
+						return;
+					} catch (IOException e) {
+						return;
 					}
-				} catch (InterruptedException e) {
-					return;
 				}
-			}
-		});
-		readThread.start();
+			});
+			readThread.start();
+		}
 	}
 
 	private void sendGlobalMsg(String msg) throws InterruptedException {
-		System.out.println("pzeadkzeodkazed");
 		ByteBuffer loginBuff = StandardCharsets.UTF_8.encode(login);
 		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
 		ByteBuffer buff = ByteBuffer
@@ -392,57 +466,24 @@ public class ClientChatHack {
 		selector.wakeup();
 	}
 
-	public void sendPrivateCnxRes(String src) throws InterruptedException {
-		try (Scanner scan = new Scanner(System.in)) {
-			readThread.interrupt();
-			System.out.println("0     = accept");
-			System.out.println("other = decline");
-			
-			Random random = new Random();
-			String res;
-			int port;
-			ByteBuffer buff;
-
-			res = scan.nextLine();
-			if (res.equals("0")) {
-				// accepter la demande de connexion privee
-				// l'adresse ip sera une string mtn
-				System.out.println("on wich port?");
-
-				port = scan.nextInt();
-
-				String address = socketAddress.toString();
-				String ipString = address.split("/")[1].split(":")[0];
-				ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(src);
-				ByteBuffer ipBuff = StandardCharsets.UTF_8.encode(ipString);
-
-				buff = ByteBuffer.allocate(
-						3 * Byte.BYTES + 3 * Integer.BYTES + Long.BYTES + srcBuff.remaining() + ipBuff.remaining());
-
-				buff.put((byte) 4);
-				buff.put((byte) 1);
-				buff.put((byte) 0);
-				buff.putInt(srcBuff.remaining());
-				buff.put(srcBuff);
-				buff.putInt(port);
-				buff.putLong(random.nextLong());
-				buff.putInt(ipBuff.remaining());
-				buff.put(ipBuff);
-
-			} else {
-				// refuser la demande de connexion privee
-				buff = ByteBuffer.allocate(3 * Byte.BYTES);
-				buff.put((byte) 4);
-				buff.put((byte) 1);
-				buff.put((byte) 1);
-			}
-
-			buff.flip();
-			queue.put(buff);
-			selector.wakeup();
-			System.out.println("wake up");
-			sendFrameToServer();
+	public void addClient(String src) {
+		synchronized (monitor) {
+			cnxRequest = true;
+			sources.add(src);
 		}
+	}
+
+	public void connectToClient(String dst, String ip, int port, long token) {
+		
+	}
+
+	private void openPrivateChannel(String ip, int port, long token) throws IOException {
+		ServerSocketChannel ssc = ServerSocketChannel.open();
+		ssc.bind(new InetSocketAddress(ip, port));
+		ssc.configureBlocking(false);
+		ssc.register(selector, SelectionKey.OP_ACCEPT);
+		channels.put(ssc, token);
+		System.out.println("channel " + ssc + " opened");
 	}
 
 	public static void main(String[] args) throws IOException {

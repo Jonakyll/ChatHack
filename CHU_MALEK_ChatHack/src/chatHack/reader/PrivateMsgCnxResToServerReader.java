@@ -10,19 +10,21 @@ import chatHack.frame.PrivateMsgCnxRefusedToClientFrame;
 public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 
 	private enum State {
-		DONE, WAITING_RES_TYPE, WAITING_SRC, WAITING_PORT, WAITING_TOKEN, WAITING_IP, ERROR,
+		DONE, WAITING_RES_TYPE, WAITING_SRC, WAITING_DST, WAITING_PORT, WAITING_TOKEN, WAITING_IP, ERROR,
 	};
 
 	private final ByteBuffer bb;
 	private State state = State.WAITING_RES_TYPE;
 	private byte resType;
 	private String src;
+	private String dst;
 	private int port;
 	private long token;
 	private String ip;
 	
 	private final ByteReader resTypeReader;
 	private final StringReader srcReader;
+	private final StringReader dstReader;
 	private final IntReader portReader;
 	private final LongReader tokenReader;
 	private final StringReader ipReader;
@@ -31,6 +33,7 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		this.bb = bb;
 		this.resTypeReader = new ByteReader(bb);
 		this.srcReader = new StringReader(bb);
+		this.dstReader = new StringReader(bb);
 		this.portReader = new IntReader(bb);
 		this.tokenReader = new LongReader(bb);
 		this.ipReader = new StringReader(bb);
@@ -62,6 +65,14 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 				state = State.DONE;
 				return ProcessStatus.DONE;
 			}
+			state = State.WAITING_DST;
+			
+		case WAITING_DST:
+			ProcessStatus dstStatus = dstReader.process();
+			if (dstStatus != ProcessStatus.DONE) {
+				return dstStatus;
+			}
+			dst = dstReader.get();
 			state = State.WAITING_PORT;
 
 		case WAITING_PORT:
@@ -101,15 +112,16 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		}
 
 		if (resType == 0) {
-			return new PrivateMsgCnxAcceptedToClientFrame(src, port, token, ip);
+			return new PrivateMsgCnxAcceptedToClientFrame(src, dst, port, token, ip);
 		}
-		return new PrivateMsgCnxRefusedToClientFrame(src, "cnx to private channel refused");
+		return new PrivateMsgCnxRefusedToClientFrame(src, dst, "cnx to private channel refused");
 	}
 
 	@Override
 	public void reset() {
 		resTypeReader.reset();
 		srcReader.reset();
+		dstReader.reset();
 		portReader.reset();
 		tokenReader.reset();
 		ipReader.reset();

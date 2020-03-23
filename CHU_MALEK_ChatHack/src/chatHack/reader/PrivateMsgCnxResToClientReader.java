@@ -10,7 +10,7 @@ import chatHack.frame.PrivateMsgCnxRefusedToClientFrame;
 public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 
 	private enum State {
-		DONE, WAITING_RES_TYPE, WAITING_SRC, WAITING_PORT, WAITING_TOKEN, WAITING_IP, WAITING_ERR_MSG, ERROR
+		DONE, WAITING_RES_TYPE, WAITING_SRC, WAITING_DST, WAITING_PORT, WAITING_TOKEN, WAITING_IP, WAITING_ERR_MSG, ERROR
 	};
 
 	private final ByteBuffer bb;
@@ -18,6 +18,7 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 
 	private byte resType;
 	private String src;
+	private String dst;
 	private int port;
 	private long token;
 	private String ip;
@@ -26,6 +27,7 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 
 	private final ByteReader resTypeReader;
 	private final StringReader srcReader;
+	private final StringReader dstReader;
 	private final IntReader portReader;
 	private final LongReader tokenReader;
 	private final StringReader ipReader;
@@ -36,10 +38,11 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 		this.bb = bb;
 		this.resTypeReader = new ByteReader(bb);
 		this.srcReader = new StringReader(bb);
+		this.dstReader = new StringReader(bb);
 		this.portReader = new IntReader(bb);
 		this.tokenReader = new LongReader(bb);
 		this.ipReader = new StringReader(bb);
-		
+
 		this.errMsgReader = new StringReader(bb);
 	}
 
@@ -74,9 +77,18 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 					return srcStatus;
 				}
 				src = srcReader.get();
+				state = State.WAITING_DST;
+				break;
+
+			case WAITING_DST:
+				ProcessStatus dstStatus = dstReader.process();
+				if (dstStatus != ProcessStatus.DONE) {
+					return dstStatus;
+				}
+				dst = dstReader.get();
 				state = State.WAITING_PORT;
 				break;
-				
+
 			case WAITING_PORT:
 				ProcessStatus portStatus = portReader.process();
 				if (portStatus != ProcessStatus.DONE) {
@@ -126,16 +138,17 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 		}
 
 		if (resType == 0) {
-			return new PrivateMsgCnxAcceptedToClientFrame(src, port, token, ip);
+			return new PrivateMsgCnxAcceptedToClientFrame(src, dst, port, token, ip);
 
 		}
-		return new PrivateMsgCnxRefusedToClientFrame(src, errMsg);
+		return new PrivateMsgCnxRefusedToClientFrame(src, dst, errMsg);
 	}
 
 	@Override
 	public void reset() {
 		resTypeReader.reset();
 		srcReader.reset();
+		dstReader.reset();
 		portReader.reset();
 		tokenReader.reset();
 		ipReader.reset();

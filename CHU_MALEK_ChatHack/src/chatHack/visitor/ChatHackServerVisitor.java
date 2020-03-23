@@ -14,6 +14,7 @@ import chatHack.frame.PrivateMsgCnxAcceptedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToServerFrame;
 import chatHack.frame.PrivateMsgCnxToDstFrame;
+import chatHack.frame.PrivateMsgFrame;
 import chatHack.frame.SimpleMsgFrame;
 import chatHack.server.ServerChatHack;
 
@@ -121,15 +122,18 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		System.out.println("private msg cnx accepted to client");
 
 		ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(frame.getSrc());
+		ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(frame.getDst());
 		ByteBuffer ipBuff = StandardCharsets.UTF_8.encode(frame.getIp());
 		ByteBuffer buff = ByteBuffer
-				.allocate(3 * Byte.BYTES + 3 * Integer.BYTES + Long.BYTES + srcBuff.remaining() + ipBuff.remaining());
+				.allocate(3 * Byte.BYTES + 4 * Integer.BYTES + Long.BYTES + srcBuff.remaining() + dstBuff.remaining() + ipBuff.remaining());
 
 		buff.put((byte) 4);
 		buff.put((byte) 1);
 		buff.put((byte) 0);
 		buff.putInt(srcBuff.remaining());
 		buff.put(srcBuff);
+		buff.putInt(dstBuff.remaining());
+		buff.put(dstBuff);
 		buff.putInt(frame.getPort());
 		buff.putLong(frame.getToken());
 		// buff.put(frame.getIpVersion());
@@ -147,15 +151,18 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		System.out.println("private msg cnx refused to cliend");
 
 		ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(frame.getSrc());
+		ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(frame.getDst());
 		ByteBuffer errMsgBuff = StandardCharsets.UTF_8.encode(frame.getErrMsg());
 		ByteBuffer buff = ByteBuffer
-				.allocate(3 * Byte.BYTES + 2 * Integer.BYTES + srcBuff.remaining() + errMsgBuff.remaining());
+				.allocate(3 * Byte.BYTES + 3 * Integer.BYTES + srcBuff.remaining() + dstBuff.remaining() + errMsgBuff.remaining());
 
 		buff.put((byte) 4);
 		buff.put((byte) 1);
 		buff.put((byte) 1);
 		buff.putInt(srcBuff.remaining());
 		buff.put(srcBuff);
+		buff.putInt(dstBuff.remaining());
+		buff.put(dstBuff);
 		buff.putInt(errMsgBuff.remaining());
 		buff.put(errMsgBuff);
 		buff.flip();
@@ -231,5 +238,11 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		// a envoyer au client
 		server.sendToClient(frame.getId(), buff);
 		return buff;
+	}
+
+	@Override
+	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

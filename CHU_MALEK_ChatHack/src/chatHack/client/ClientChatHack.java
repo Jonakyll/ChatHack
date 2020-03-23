@@ -307,7 +307,7 @@ public class ClientChatHack {
 				try (Scanner scan = new Scanner(System.in)) {
 					String line;
 
-					while (scan.hasNextLine() == !closed) {
+					while (scan.hasNextLine() && !closed) {
 						// il faut gerer tous les paquets possibles venant du client
 
 						line = scan.nextLine();
@@ -338,6 +338,7 @@ public class ClientChatHack {
 	}
 
 	private void sendGlobalMsg(String msg) throws InterruptedException {
+		System.out.println("pzeadkzeodkazed");
 		ByteBuffer loginBuff = StandardCharsets.UTF_8.encode(login);
 		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
 		ByteBuffer buff = ByteBuffer
@@ -392,8 +393,8 @@ public class ClientChatHack {
 	}
 
 	public void sendPrivateCnxRes(String src) throws InterruptedException {
-		// readThread.interrupt();
 		try (Scanner scan = new Scanner(System.in)) {
+			readThread.interrupt();
 			System.out.println("0     = accept");
 			System.out.println("other = decline");
 			
@@ -439,8 +440,9 @@ public class ClientChatHack {
 			buff.flip();
 			queue.put(buff);
 			selector.wakeup();
+			System.out.println("wake up");
+			sendFrameToServer();
 		}
-		 readThread.start();
 	}
 
 	public static void main(String[] args) throws IOException {

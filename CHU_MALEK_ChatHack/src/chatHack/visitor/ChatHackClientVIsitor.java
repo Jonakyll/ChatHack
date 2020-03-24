@@ -2,6 +2,7 @@ package chatHack.visitor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 
 import chatHack.client.ClientChatHack;
 import chatHack.frame.GlobalMsgFrame;
@@ -18,9 +19,11 @@ import chatHack.frame.SimpleMsgFrame;
 
 public class ChatHackClientVIsitor implements FrameVisitor {
 
+	private final SelectionKey key;
 	private final ClientChatHack client;
 
-	public ChatHackClientVIsitor(ClientChatHack client) {
+	public ChatHackClientVIsitor(SelectionKey key, ClientChatHack client) {
+		this.key = key;
 		this.client = client;
 	}
 
@@ -39,7 +42,7 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 	@Override
 	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
 		System.out.println(frame);
-		client.disconnect();
+		client.disconnect(key);
 		return null;
 	}
 
@@ -91,12 +94,14 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 			if ((client.withPassword() && frame.getOpcode() == 1)
 					|| (!client.withPassword() && frame.getOpcode() == 0)) {
 				System.out.println("CONNECTED");
-				client.connect();
+				client.connect(key);
 			} else {
 				client.sendLogout();
 			}
 			return null;
 		} catch (InterruptedException e) {
+			return null;
+		} catch (IOException e) {
 			return null;
 		}
 

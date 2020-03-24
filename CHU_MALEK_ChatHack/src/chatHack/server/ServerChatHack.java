@@ -12,12 +12,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-
-import chatHack.client.SynchronizedPrivateClients;
 
 public class ServerChatHack {
 
@@ -54,7 +50,7 @@ public class ServerChatHack {
 		sc.configureBlocking(false);
 		sc.connect(socketAdress);
 		MDPKey = sc.register(selector, SelectionKey.OP_CONNECT);
-		MDPKey.attach(new Context(this, MDPKey));
+		MDPKey.attach(new ServerContext(this, MDPKey));
 
 		serverSocketChannel.configureBlocking(false);
 		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -85,13 +81,13 @@ public class ServerChatHack {
 
 		try {
 			if (key.isValid() && key.isConnectable()) {
-				((Context) key.attachment()).doConnect();
+				((ServerContext) key.attachment()).doConnect();
 			}
 			if (key.isValid() && key.isWritable()) {
-				((Context) key.attachment()).doWrite();
+				((ServerContext) key.attachment()).doWrite();
 			}
 			if (key.isValid() && key.isReadable()) {
-				((Context) key.attachment()).doRead();
+				((ServerContext) key.attachment()).doRead();
 			}
 		} catch (IOException e) {
 			logger.info("Connection closed with client due to IOException");
@@ -105,7 +101,7 @@ public class ServerChatHack {
 		if (sc != null) {
 			sc.configureBlocking(false);
 			SelectionKey clientKey = sc.register(selector, SelectionKey.OP_READ);
-			clientKey.attach(new Context(this, clientKey));
+			clientKey.attach(new ServerContext(this, clientKey));
 		}
 	}
 
@@ -122,7 +118,7 @@ public class ServerChatHack {
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
 			for (SelectionKey k : this.clients.values()) {
 
-				Context ctx = (Context) k.attachment();
+				ServerContext ctx = (ServerContext) k.attachment();
 
 				if (ctx == null) {
 					continue;
@@ -143,7 +139,7 @@ public class ServerChatHack {
 	}
 
 	public void sendToMDP(ByteBuffer buff) {
-		Context ctx = (Context) MDPKey.attachment();
+		ServerContext ctx = (ServerContext) MDPKey.attachment();
 
 		if (ctx == null) {
 			return;
@@ -157,7 +153,7 @@ public class ServerChatHack {
 		if (key == null) {
 			return;
 		}
-		Context ctx = (Context) key.attachment();
+		ServerContext ctx = (ServerContext) key.attachment();
 
 		if (ctx == null) {
 			return;
@@ -179,7 +175,7 @@ public class ServerChatHack {
 			}
 		}
 		
-		Context ctx = (Context) key.attachment();
+		ServerContext ctx = (ServerContext) key.attachment();
 
 		if (ctx == null) {
 			return;
@@ -195,7 +191,7 @@ public class ServerChatHack {
 			return;
 		}
 		
-		Context ctx = (Context) key.attachment();
+		ServerContext ctx = (ServerContext) key.attachment();
 		
 		if (ctx == null) {
 			return;

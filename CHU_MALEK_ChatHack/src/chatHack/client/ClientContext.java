@@ -1,58 +1,55 @@
-package chatHack.server;
+package chatHack.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import chatHack.frame.Frame;
-import chatHack.reader.FrameToServerReader;
+import chatHack.reader.FrameToClientReader;
 import chatHack.reader.Reader;
-import chatHack.visitor.ChatHackServerVisitor;
+import chatHack.visitor.ChatHackClientVIsitor;
 import chatHack.visitor.FrameVisitor;
 
-public class Context {
-
+public class ClientContext {
+	
 	private static int BUFFER_SIZE = 1_024;
-
+	
 	private final SelectionKey key;
 	private final SocketChannel sc;
-//	private final ServerChatHack server;
+	private final ClientChatHack client;
 	private boolean closed = false;
-	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
-	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
+	private final ByteBuffer bbin = ByteBuffer.allocateDirect(BUFFER_SIZE);
+	private final ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
+	
+	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
 
-	private final Queue<ByteBuffer> queue = new LinkedList<>();
-//	private Reader reader;
-	private Reader<Frame> reader = new FrameToServerReader(bbin);
+	private final Reader<Frame> reader = new FrameToClientReader(bbin);
+	private final FrameVisitor visitor;
 	
-	private FrameVisitor visitor;
+	private boolean connected = false;
+
 	
-	public Context(ServerChatHack server, SelectionKey key) {
+	public ClientContext(ClientChatHack client, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
-//		this.server = server;
-		this.visitor = new ChatHackServerVisitor(key, server);
+		this.client = client;
+		this.visitor = new ChatHackClientVIsitor(key, client);
 	}
 	
-	public SelectionKey getKey() {
-		return key;
-	}
-
 	private void processIn() {
 
 		for (;;) {
 			Reader.ProcessStatus status = reader.process();
 
 			switch (status) {
-			case DONE: {
+			case DONE:
 				Frame frame = (Frame) reader.get();
 				frame.accept(visitor);
 				reader.reset();
 				break;
-			}
 
 			case REFILL:
 				return;
@@ -63,20 +60,20 @@ public class Context {
 			}
 		}
 	}
-
+	
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
 		processOut();
 		updateInterestOps();
 	}
-
-	private void processOut() {
+	
+	public void processOut() {
 		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
 			bbout.put(queue.poll());
 		}
 	}
-
-	private void updateInterestOps() {
+	
+	public void updateInterestOps() {
 		int ops = 0;
 
 		if (bbin.hasRemaining() && !closed) {
@@ -91,7 +88,7 @@ public class Context {
 			key.interestOps(ops);
 		}
 	}
-
+	
 	public void silentlyClose() {
 		try {
 			sc.close();
@@ -99,34 +96,37 @@ public class Context {
 
 		}
 	}
-	
+
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
 			return;
 		}
 		updateInterestOps();
 	}
-
+	
 	public void doWrite() throws IOException {
 		bbout.flip();
 		sc.write(bbout);
 		bbout.compact();
-
+		
 		processOut();
 		updateInterestOps();
 	}
-
+	
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
 			closed = true;
 		}
-
+		
 		processIn();
 		updateInterestOps();
 	}
-
+	
 	public void close() {
 		closed = true;
 	}
-
+	
+	public void connect() {
+		connected = true;
+	}
 }

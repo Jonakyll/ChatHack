@@ -93,7 +93,7 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 		try {
 			if ((client.withPassword() && frame.getOpcode() == 1)
 					|| (!client.withPassword() && frame.getOpcode() == 0)) {
-				System.out.println("CONNECTED");
+				System.out.println("you are connected");
 				client.connect(key);
 			} else {
 				client.sendLogout();

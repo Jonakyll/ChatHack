@@ -41,7 +41,6 @@ public class ClientContext {
 	}
 	
 	private void processIn() {
-
 		for (;;) {
 			Reader.ProcessStatus status = reader.process();
 

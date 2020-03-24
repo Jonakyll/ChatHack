@@ -39,7 +39,6 @@ public class ClientChatHack {
 	private final String password;
 	private final boolean withPassword;
 
-//	private final Map<String, Long> clientsTest = new HashMap<>();
 	private final Map<String, Client> clients = new HashMap<>();
 
 	private final BlockingQueue<String> sources = new LinkedBlockingQueue<>();
@@ -100,38 +99,16 @@ public class ClientChatHack {
 		}
 	}
 
-	// private void processSelectedKeys(Set<SelectionKey> selectedKeys) throws
-	// IOException {
-	// for (SelectionKey key : selectedKeys) {
-	// // accepter la cnx d'un client en prive
-	// if (key.isValid() && key.isAcceptable()) {
-	// doAccept(key);
-	// }
-	// if (key.isValid() && key.isConnectable()) {
-	// ((ClientContext) key.attachment()).doConnect();
-	// }
-	// if (key.isValid() && key.isWritable()) {
-	// ((ClientContext) key.attachment()).doWrite();
-	// }
-	// if (key.isValid() && key.isReadable()) {
-	// ((ClientContext) key.attachment()).doRead();
-	// }
-	// }
-	// }
-
 	private void treatKey(SelectionKey key) {
 		ClientContext ctx = (ClientContext) key.attachment();
-
 		if (ctx == null) {
 			return;
 		}
-
 		ctx.processOut();
 		ctx.updateInterestOps();
 
 		try {
 			if (key.isValid() && key.isAcceptable()) {
-				System.out.println("accepter un client");
 				doAccept(key);
 			}
 
@@ -189,7 +166,6 @@ public class ClientChatHack {
 
 	public void connect(SelectionKey key) throws IOException {
 		ClientContext ctx = (ClientContext) key.attachment();
-
 		if (ctx == null) {
 			return;
 		}
@@ -198,11 +174,9 @@ public class ClientChatHack {
 
 	public void disconnect(SelectionKey key) {
 		ClientContext ctx = (ClientContext) key.attachment();
-
 		if (ctx == null) {
 			return;
 		}
-
 		ctx.close();
 		ctx.silentlyClose();
 		cnxThread.interrupt();
@@ -213,12 +187,9 @@ public class ClientChatHack {
 	private void connectToServer() {
 		cnxThread = new Thread(() -> {
 			ClientContext ctx = (ClientContext) uniqueKey.attachment();
-
 			if (ctx == null) {
 				return;
 			}
-
-			System.out.println("try to connect");
 			ByteBuffer loginBuff = StandardCharsets.UTF_8.encode(login);
 			ByteBuffer bb;
 			if (withPassword) {
@@ -254,10 +225,7 @@ public class ClientChatHack {
 		synchronized (monitor) {
 
 			readThread = new Thread(() -> {
-
 				while (!Thread.interrupted()) {
-
-					System.out.println("you are connected");
 					try (Scanner scan = new Scanner(System.in)) {
 						String line;
 
@@ -269,7 +237,6 @@ public class ClientChatHack {
 								privateCnxRes(scan);
 
 							} else {
-
 								line = scan.nextLine();
 
 								// msg global
@@ -391,7 +358,6 @@ public class ClientChatHack {
 		if (!clients.containsKey(dst)) {
 			// envoyer une demande de connexion privee au serveur
 			ClientContext ctx = (ClientContext) uniqueKey.attachment();
-
 			if (ctx == null) {
 				return;
 			}
@@ -427,7 +393,6 @@ public class ClientChatHack {
 			// envoyer le paquet au bon dst
 			Client clientDst = clients.get(dst);
 			ClientContext ctx = (ClientContext) clientDst.getKey().attachment();
-			
 			if (ctx == null) {
 				return;
 			}
@@ -439,7 +404,6 @@ public class ClientChatHack {
 
 	public void sendLogout() throws InterruptedException {
 		ClientContext ctx = (ClientContext) uniqueKey.attachment();
-
 		if (ctx == null) {
 			return;
 		}
@@ -484,7 +448,7 @@ public class ClientChatHack {
 		ssc.configureBlocking(false);
 		ssc.register(selector, SelectionKey.OP_ACCEPT);
 		
-		System.out.println("channel " + ssc + " opened");
+		System.out.println("channel " + ssc + " open");
 	}
 
 	public static void main(String[] args) throws IOException {

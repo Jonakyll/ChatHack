@@ -1,7 +1,6 @@
 package chatHack.reader;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import chatHack.frame.Frame;
 import chatHack.frame.PrivateMsgCnxAcceptedToClientFrame;
@@ -13,7 +12,7 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		DONE, WAITING_RES_TYPE, WAITING_SRC, WAITING_DST, WAITING_PORT, WAITING_TOKEN, WAITING_IP, ERROR,
 	};
 
-	private final ByteBuffer bb;
+//	private final ByteBuffer bb;
 	private State state = State.WAITING_RES_TYPE;
 	private byte resType;
 	private String src;
@@ -30,7 +29,7 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 	private final StringReader ipReader;
 	
 	public PrivateMsgCnxResToServerReader(ByteBuffer bb) {
-		this.bb = bb;
+//		this.bb = bb;
 		this.resTypeReader = new ByteReader(bb);
 		this.srcReader = new StringReader(bb);
 		this.dstReader = new StringReader(bb);

@@ -19,13 +19,11 @@ public class ServerContext {
 
 	private final SelectionKey key;
 	private final SocketChannel sc;
-//	private final ServerChatHack server;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
 	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
 
 	private final Queue<ByteBuffer> queue = new LinkedList<>();
-//	private Reader reader;
 	private final Reader<Frame> reader = new FrameToServerReader(bbin);
 	
 	private final FrameVisitor visitor;
@@ -33,7 +31,6 @@ public class ServerContext {
 	public ServerContext(ServerChatHack server, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
-//		this.server = server;
 		this.visitor = new ChatHackServerVisitor(key, server);
 	}
 	
@@ -77,8 +74,6 @@ public class ServerContext {
 	}
 
 	private void updateInterestOps() {
-		System.out.println("bbin " + bbin.remaining());
-		System.out.println("bbout " + bbout.remaining());
 		int ops = 0;
 
 		if (bbin.hasRemaining() && !closed) {

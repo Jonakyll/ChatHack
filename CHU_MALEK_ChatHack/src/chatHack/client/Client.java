@@ -1,15 +1,22 @@
 package chatHack.client;
 
+import java.nio.channels.SelectionKey;
+
 public class Client {
 	
-	private final String ip;
-	private final int port;
 	private final long token;
+	private final SelectionKey key;
 	
-	public Client(String ip, int port, long token) {
-		this.ip = ip;
-		this.port = port;
+	public Client(long token, SelectionKey key) {
 		this.token = token;
+		this.key = key;
 	}
 
+	public long getToken() {
+		return token;
+	}
+	
+	public SelectionKey getKey() {
+		return key;
+	}
 }

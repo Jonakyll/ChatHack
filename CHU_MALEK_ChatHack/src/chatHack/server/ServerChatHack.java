@@ -28,13 +28,9 @@ public class ServerChatHack {
 	private final SocketChannel sc;
 	private SelectionKey MDPKey;
 
-//	private final Map<Long, SelectionKey> clients = new HashMap<>();
-//	private final Object monitor = new Object();
-	
-//	j'ai pas trouve mieux comme solution pour pouvoir envoyer les demandes de connexion privee
 	private final SynchronizedClients<String> clients = new SynchronizedClients<>();
 	private final SynchronizedClients<Long> clients2 = new SynchronizedClients<>();
-	
+
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
 		this.MDPPort = MDPPort;
@@ -116,24 +112,24 @@ public class ServerChatHack {
 	}
 
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
-			for (SelectionKey k : this.clients.values()) {
+		for (SelectionKey k : this.clients.values()) {
 
-				ServerContext ctx = (ServerContext) k.attachment();
+			ServerContext ctx = (ServerContext) k.attachment();
 
-				if (ctx == null) {
-					continue;
-				}
-
-				if (k != key) {
-					ctx.queueFrame(buff.duplicate());
-				}
+			if (ctx == null) {
+				continue;
 			}
+
+			if (k != key) {
+				ctx.queueFrame(buff.duplicate());
+			}
+		}
 	}
 
 	public void addClient(SelectionKey key, String name) {
 		this.clients.put(name, key);
 	}
-	
+
 	public void addClient2(SelectionKey key, long id) {
 		this.clients2.put(id, key);
 	}
@@ -161,20 +157,19 @@ public class ServerChatHack {
 		ctx.queueFrame(buff);
 	}
 
-//	probleme de concurrence
 	public void kickClient(SelectionKey key, ByteBuffer buff) {
 		for (String name : clients.keySet()) {
 			if (clients.get(name) == key) {
 				clients.remove(name);
 			}
 		}
-		
+
 		for (long id : clients2.keySet()) {
 			if (clients2.get(id) == key) {
 				clients2.remove(id);
 			}
 		}
-		
+
 		ServerContext ctx = (ServerContext) key.attachment();
 
 		if (ctx == null) {
@@ -183,22 +178,22 @@ public class ServerChatHack {
 		ctx.queueFrame(buff);
 		ctx.close();
 	}
-	
+
 	public void sendToDst(String dst, ByteBuffer buff) {
 		SelectionKey key = clients.get(dst);
-		
+
 		if (key == null) {
 			return;
 		}
-		
+
 		ServerContext ctx = (ServerContext) key.attachment();
-		
+
 		if (ctx == null) {
 			return;
 		}
-		
+
 		ctx.queueFrame(buff);
-		
+
 	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {

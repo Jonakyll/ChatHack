@@ -11,9 +11,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
@@ -41,17 +39,18 @@ public class ClientChatHack {
 	private final String password;
 	private final boolean withPassword;
 
-	private final Map<String, Long> clientsTest = new HashMap<>();
-	// private final SynchronizedPrivateClients clients = new
-	// SynchronizedPrivateClients();
+//	private final Map<String, Long> clientsTest = new HashMap<>();
+	private final Map<String, Client> clients = new HashMap<>();
 
 	private final BlockingQueue<String> sources = new LinkedBlockingQueue<>();
 	private boolean cnxRequest = false;
 	private int portForPrivate = -1;
 	private ServerSocketChannel ssc;
-	private final List<SocketChannel> channels = new ArrayList<>();
 
 	private final Object monitor = new Object();
+	
+	private String lastDst;
+	private long lastToken;
 
 	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
 			throws IOException {
@@ -63,7 +62,6 @@ public class ClientChatHack {
 		this.withPassword = withPassword;
 
 		this.sc = SocketChannel.open();
-		// this.socketAddress = socketAddress;
 		this.selector = Selector.open();
 	}
 
@@ -93,12 +91,6 @@ public class ClientChatHack {
 						} catch (UncheckedIOException tunneled) {
 							throw tunneled.getCause();
 						}
-
-						// selector.select();
-						// // processOut();
-						// // updateInterestOps();
-						// processSelectedKeys(selectedKeys);
-						// selectedKeys.clear();
 					}
 				} catch (IOException e) {
 					return;
@@ -139,6 +131,7 @@ public class ClientChatHack {
 
 		try {
 			if (key.isValid() && key.isAcceptable()) {
+				System.out.println("accepter un client");
 				doAccept(key);
 			}
 
@@ -149,7 +142,7 @@ public class ClientChatHack {
 		try {
 
 			if (key.isValid() && key.isConnectable()) {
-				((ClientContext) key.attachment()).doConnect();
+				doConnect(key);
 			}
 
 			if (key.isValid() && key.isWritable()) {
@@ -173,6 +166,11 @@ public class ClientChatHack {
 			SelectionKey clientKey = sc.register(selector, SelectionKey.OP_READ);
 			clientKey.attach(new ClientContext(this, clientKey));
 		}
+	}
+	
+	private void doConnect(SelectionKey key) throws IOException {
+		clients.put(lastDst, new Client(lastToken, key));
+		((ClientContext) key.attachment()).doConnect();
 	}
 
 	private void silentlyClose(SelectionKey key) {
@@ -390,8 +388,7 @@ public class ClientChatHack {
 
 	private void sendPrivateMsg(String dst, String msg) throws InterruptedException {
 		ByteBuffer buff;
-		// if (!this.clients.containsKey(dst)) {
-		if (!this.clientsTest.containsKey(dst)) {
+		if (!clients.containsKey(dst)) {
 			// envoyer une demande de connexion privee au serveur
 			ClientContext ctx = (ClientContext) uniqueKey.attachment();
 
@@ -422,12 +419,20 @@ public class ClientChatHack {
 			buff.put((byte) 2);
 			buff.put((byte) 0);
 			// buff.putLong(clients.get(dst));
-			buff.putLong(clientsTest.get(dst));
+			buff.putLong(clients.get(dst).getToken());
 			buff.putInt(msgBuff.remaining());
 			buff.put(msgBuff);
 			buff.flip();
 
 			// envoyer le paquet au bon dst
+			Client clientDst = clients.get(dst);
+			ClientContext ctx = (ClientContext) clientDst.getKey().attachment();
+			
+			if (ctx == null) {
+				return;
+			}
+			ctx.queueFrame(buff);
+			selector.wakeup();
 		}
 
 	}
@@ -457,15 +462,20 @@ public class ClientChatHack {
 	}
 
 	public void connectToClient(String dst, String ip, int port, long token) throws IOException {
+		lastDst = dst;
+		lastToken = token;
+		
 		SocketAddress sa = new InetSocketAddress(ip, port);
 		SocketChannel sc = SocketChannel.open();
+		sc.configureBlocking(false);
 		sc.connect(sa);
-
-		// null pointer exception.
-		// this.clients.put(dst, token);
-		this.clientsTest.put(dst, token);
-
-		channels.add(sc);
+		
+		SelectionKey clientKey = sc.register(selector, SelectionKey.OP_CONNECT);
+		
+		clients.put(lastDst, new Client(lastToken, clientKey));
+		
+		clientKey.attach(new ClientContext(this, clientKey));
+		System.out.println("Connected to: " + dst);
 	}
 
 	private void openPrivateChannel(String ip, long token) throws IOException {
@@ -473,6 +483,7 @@ public class ClientChatHack {
 		ssc.bind(new InetSocketAddress(ip, portForPrivate));
 		ssc.configureBlocking(false);
 		ssc.register(selector, SelectionKey.OP_ACCEPT);
+		
 		System.out.println("channel " + ssc + " opened");
 	}
 

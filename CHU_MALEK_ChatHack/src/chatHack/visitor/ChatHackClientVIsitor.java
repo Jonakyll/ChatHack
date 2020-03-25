@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 
 import chatHack.client.ClientChatHack;
+import chatHack.client.ClientContext;
 import chatHack.frame.GlobalMsgFrame;
 import chatHack.frame.LogNoPwdToMDPFrame;
 import chatHack.frame.LogOutFrame;
@@ -42,6 +43,12 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 	@Override
 	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
 		System.out.println(frame);
+		ClientContext ctx = (ClientContext) key.attachment();
+		if (ctx == null) {
+			return null;
+		}
+		ctx.close();
+		ctx.silentlyClose();
 		client.disconnect(key);
 		return null;
 	}
@@ -78,7 +85,7 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 	@Override
 	public ByteBuffer visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
 		System.out.println(frame);
-		client.addClient(frame.getSrc());
+		client.addSrc(frame.getSrc());
 		return null;
 	}
 
@@ -94,14 +101,17 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 			if ((client.withPassword() && frame.getOpcode() == 1)
 					|| (!client.withPassword() && frame.getOpcode() == 0)) {
 				System.out.println("you are connected");
-				client.connect(key);
+				ClientContext ctx = (ClientContext) key.attachment();
+
+				if (ctx == null) {
+					return null;
+				}
+				ctx.connect();
 			} else {
 				client.sendLogout();
 			}
 			return null;
 		} catch (InterruptedException e) {
-			return null;
-		} catch (IOException e) {
 			return null;
 		}
 
@@ -109,7 +119,13 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 
 	@Override
 	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
-		System.out.println(frame);
+		try {
+			// ajouter la nouvelle src
+			client.addPrivateClient(frame.getSrc(), frame.getToken(), key);
+			client.writeMsg(frame);
+		} catch (IOException e) {
+			return null;
+		}
 		return null;
 	}
 

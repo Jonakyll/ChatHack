@@ -64,8 +64,8 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.put(nameBuff);
 		buff.flip();
 
-		server.addClient(key, frame.getName());
-		server.addClient2(key, id);
+		server.addClientString(key, frame.getName());
+		server.addClientLong(key, id);
 
 		// a envoyer au serveur MDP
 		server.sendToMDP(buff);
@@ -86,7 +86,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.flip();
 
 		// a envoyer au client qui se deconnecte
-		server.kickClient(key, buff);
+		server.removeClient(key, buff);
 		return buff;
 	}
 
@@ -109,8 +109,8 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.put(passwordBuff);
 		buff.flip();
 
-		server.addClient(key, frame.getName());
-		server.addClient2(key, id);
+		server.addClientString(key, frame.getName());
+		server.addClientLong(key, id);
 
 		// a envoyer au serveur MDP
 		server.sendToMDP(buff);
@@ -136,13 +136,12 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.put(dstBuff);
 		buff.putInt(frame.getPort());
 		buff.putLong(frame.getToken());
-		// buff.put(frame.getIpVersion());
 		buff.putInt(ipBuff.remaining());
 		buff.put(ipBuff);
 		buff.flip();
 
 		// a envoyer au client qui a envoye la frame
-		server.sendToDst(frame.getSrc(), buff);
+		server.sendToClientString(frame.getSrc(), buff);
 		return buff;
 	}
 
@@ -168,7 +167,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.flip();
 
 		// a envoyer au client qui a envoye la frame
-		server.sendToDst(frame.getSrc(), buff);
+		server.sendToClientString(frame.getSrc(), buff);
 		return buff;
 	}
 
@@ -205,7 +204,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.flip();
 
 		// a envoyer au destinataire
-		server.sendToDst(frame.getDst(), buff);
+		server.sendToClientString(frame.getDst(), buff);
 		return buff;
 	}
 
@@ -236,7 +235,7 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		buff.flip();
 
 		// a envoyer au client
-		server.sendToClient(frame.getId(), buff);
+		server.sendToClientLong(frame.getId(), buff);
 		return buff;
 	}
 

@@ -28,8 +28,8 @@ public class ServerChatHack {
 	private final SocketChannel sc;
 	private SelectionKey MDPKey;
 
-	private final SynchronizedClients<String> clients = new SynchronizedClients<>();
-	private final SynchronizedClients<Long> clients2 = new SynchronizedClients<>();
+	private final SynchronizedClients<String> clientsString = new SynchronizedClients<>();
+	private final SynchronizedClients<Long> clientsLong = new SynchronizedClients<>();
 
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
@@ -112,66 +112,57 @@ public class ServerChatHack {
 	}
 
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
-		for (SelectionKey k : this.clients.values()) {
-
+		for (SelectionKey k : this.clientsString.values()) {
 			ServerContext ctx = (ServerContext) k.attachment();
-
 			if (ctx == null) {
 				continue;
 			}
-
 			if (k != key) {
 				ctx.queueFrame(buff.duplicate());
 			}
 		}
 	}
 
-	public void addClient(SelectionKey key, String name) {
-		this.clients.put(name, key);
+	public void addClientString(SelectionKey key, String name) {
+		this.clientsString.put(name, key);
 	}
 
-	public void addClient2(SelectionKey key, long id) {
-		this.clients2.put(id, key);
+	public void addClientLong(SelectionKey key, long id) {
+		this.clientsLong.put(id, key);
 	}
 
 	public void sendToMDP(ByteBuffer buff) {
 		ServerContext ctx = (ServerContext) MDPKey.attachment();
-
 		if (ctx == null) {
 			return;
 		}
 		ctx.queueFrame(buff);
 	}
 
-	public void sendToClient(long id, ByteBuffer buff) {
-		SelectionKey key = this.clients2.get(id);
-
+	public void sendToClientLong(long id, ByteBuffer buff) {
+		SelectionKey key = clientsLong.get(id);
 		if (key == null) {
 			return;
 		}
 		ServerContext ctx = (ServerContext) key.attachment();
-
 		if (ctx == null) {
 			return;
 		}
 		ctx.queueFrame(buff);
 	}
 
-	public void kickClient(SelectionKey key, ByteBuffer buff) {
-		for (String name : clients.keySet()) {
-			if (clients.get(name) == key) {
-				clients.remove(name);
+	public void removeClient(SelectionKey key, ByteBuffer buff) {
+		for (String name : clientsString.keySet()) {
+			if (clientsString.get(name) == key) {
+				clientsString.remove(name);
 			}
 		}
-
-		for (long id : clients2.keySet()) {
-			if (clients2.get(id) == key) {
-				clients2.remove(id);
+		for (long id : clientsLong.keySet()) {
+			if (clientsLong.get(id) == key) {
+				clientsLong.remove(id);
 			}
 		}
-
 		ServerContext ctx = (ServerContext) key.attachment();
-
 		if (ctx == null) {
 			return;
 		}
@@ -179,21 +170,16 @@ public class ServerChatHack {
 		ctx.close();
 	}
 
-	public void sendToDst(String dst, ByteBuffer buff) {
-		SelectionKey key = clients.get(dst);
-
+	public void sendToClientString(String dst, ByteBuffer buff) {
+		SelectionKey key = clientsString.get(dst);
 		if (key == null) {
 			return;
 		}
-
 		ServerContext ctx = (ServerContext) key.attachment();
-
 		if (ctx == null) {
 			return;
 		}
-
 		ctx.queueFrame(buff);
-
 	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {

@@ -8,20 +8,17 @@ import chatHack.frame.LogOutFrame;
 public class LogOutToClientReader implements Reader<Frame> {
 
 	private enum State {
-		DONE, WAITING_TYPE, WAITING_MSG, ERROR
+		DONE, WAITING, ERROR
 	};
 
 //	private final ByteBuffer bb;
-	private State state = State.WAITING_TYPE;
-	private byte logOutType;
+	private State state = State.WAITING;
 	private String msg;
 
-	private final ByteReader logOutTypeReader;
 	private final StringReader msgReader;
 
 	public LogOutToClientReader(ByteBuffer bb) {
 //		this.bb = bb;
-		this.logOutTypeReader = new ByteReader(bb);
 		this.msgReader = new StringReader(bb);
 	}
 
@@ -33,15 +30,7 @@ public class LogOutToClientReader implements Reader<Frame> {
 
 		switch (state) {
 
-		case WAITING_TYPE:
-			ProcessStatus logOutTypeStatus = logOutTypeReader.process();
-			if (logOutTypeStatus != ProcessStatus.DONE) {
-				return logOutTypeStatus;
-			}
-			logOutType = logOutTypeReader.get();
-			state = State.WAITING_MSG;
-
-		case WAITING_MSG:
+		case WAITING:
 			ProcessStatus msgStatus = msgReader.process();
 			if (msgStatus != ProcessStatus.DONE) {
 				return msgStatus;
@@ -60,17 +49,13 @@ public class LogOutToClientReader implements Reader<Frame> {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		if (logOutType == 0) {
-			return new LogOutFrame((byte) 0, msg);
-		}
-		return new LogOutFrame((byte) 1, msg);
+		return new LogOutFrame( msg);
 	}
 
 	@Override
 	public void reset() {
-		logOutTypeReader.reset();
 		msgReader.reset();
-		state = State.WAITING_TYPE;
+		state = State.WAITING;
 	}
 
 }

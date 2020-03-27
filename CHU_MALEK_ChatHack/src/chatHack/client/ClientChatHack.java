@@ -78,19 +78,15 @@ public class ClientChatHack {
 
 		// pour n'envoyer qu'au serveur
 		serverKey.attach(new ClientContext(this, serverKey));
-		System.out.println("Connected to: " + socketAddress.toString());
+		System.out.println("Connection to: " + socketAddress.toString());
 	}
 
 	private void launch() throws IOException {
 		synchronized (monitor) {
 
 			mainThread = new Thread(() -> {
-
 				try {
-					connectToServer();
-
 					while (!Thread.interrupted()) {
-
 						try {
 							selector.select(this::treatKey);
 						} catch (UncheckedIOException tunneled) {
@@ -108,7 +104,7 @@ public class ClientChatHack {
 	private void treatKey(SelectionKey key) {
 		try {
 			if (key.isValid() && key.isAcceptable()) {
-				System.out.println("SOMEONE HAS CONNECT TO YOU");
+				System.out.println("Someone joins your private channel");
 				doAccept(key);
 			}
 		} catch (IOException ioe) {
@@ -124,8 +120,7 @@ public class ClientChatHack {
 			ctx.updateInterestOps();
 
 			if (key.isValid() && key.isConnectable()) {
-				// doConnect(key);
-				System.out.println("WELCOME");
+				System.out.println("You are connected to a channel");
 				((ClientContext) key.attachment()).doConnect();
 			}
 
@@ -149,13 +144,10 @@ public class ClientChatHack {
 			sc.configureBlocking(false);
 			SelectionKey clientKey = sc.register(selector, SelectionKey.OP_READ);
 			clientKey.attach(new ClientContext(this, clientKey));
+			
+			addPrivateClient(lastDst, lastToken, clientKey);
 		}
 	}
-
-	// private void doConnect(SelectionKey key) throws IOException {
-	//// clients.put(lastDst, new Client(lastToken, key));
-	// ((ClientContext) key.attachment()).doConnect();
-	// }
 
 	private void silentlyClose(SelectionKey key) {
 		Channel sc = (Channel) key.channel();
@@ -234,7 +226,6 @@ public class ClientChatHack {
 
 								// msg global
 								if (line.startsWith("/ ") || line.startsWith("@ ")) {
-									System.out.println("AZEPDOAZED");
 									sendGlobalMsg(line.substring(2));
 								}
 
@@ -248,6 +239,7 @@ public class ClientChatHack {
 								// logout
 								else if (line.equals("logout")) {
 									sendLogout();
+									selector.wakeup();
 									return;
 								}
 							}
@@ -293,7 +285,8 @@ public class ClientChatHack {
 		long token = random.nextLong();
 		String address = sc.getLocalAddress().toString();
 		String ipString = address.split("/")[1].split(":")[0];
-		ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(sources.poll());
+		String dst = sources.poll();
+		ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(dst);
 		ByteBuffer dstBuff = StandardCharsets.UTF_8.encode(login);
 		ByteBuffer ipBuff = StandardCharsets.UTF_8.encode(ipString);
 
@@ -318,6 +311,8 @@ public class ClientChatHack {
 			openPrivateChannel(ipString, token);
 		}
 		ctx.queueFrame(buff);
+		lastDst = dst;
+		lastToken = token;
 	}
 
 	private void declinePrivateCnx() {
@@ -423,7 +418,12 @@ public class ClientChatHack {
 		if (ctx == null) {
 			return;
 		}
-		ctx.queueFrame(buff);
+		
+		if (clientDst.getKey().isValid()) {
+			ctx.queueFrame(buff);
+		} else {
+			clients.remove(dst);
+		}
 	}
 
 	private void sendPrivateFileToDst(String dst, String msg) throws IOException {
@@ -458,7 +458,12 @@ public class ClientChatHack {
 			if (ctx == null) {
 				return;
 			}
-			ctx.queueFrame(buff);
+			
+			if (clientDst.getKey().isValid()) {
+				ctx.queueFrame(buff);
+			} else {
+				clients.remove(dst);
+			}
 		}
 	}
 
@@ -467,13 +472,12 @@ public class ClientChatHack {
 		if (ctx == null) {
 			return;
 		}
-		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES);
+		ByteBuffer buff = ByteBuffer.allocate( Byte.BYTES);
 		buff.put((byte) 5);
-		buff.put((byte) 0);
 		buff.flip();
 		ctx.queueFrame(buff);
 	}
-
+	
 	public void addSrc(String src) {
 		synchronized (monitor) {
 			cnxRequest = true;
@@ -514,7 +518,8 @@ public class ClientChatHack {
 
 		clients.put(lastDst, new Client(lastToken, clientKey));
 		clientKey.attach(new ClientContext(this, clientKey));
-		System.out.println("Connected to: /" + ip + ":" + port);
+		System.out.println("Connected to: " + dst + " /" + ip + ":" + port);
+
 	}
 
 	private void openPrivateChannel(String ip, long token) throws IOException {
@@ -547,6 +552,7 @@ public class ClientChatHack {
 		ClientChatHack client = new ClientChatHack(ip, port, path, login, password, withPassword);
 		client.init();
 		client.launch();
+		client.connectToServer();
 		client.sendFrameToServer();
 	}
 

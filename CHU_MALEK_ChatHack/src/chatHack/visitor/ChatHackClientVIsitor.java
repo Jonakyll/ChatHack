@@ -100,7 +100,11 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 		try {
 			if ((client.withPassword() && frame.getOpcode() == 1)
 					|| (!client.withPassword() && frame.getOpcode() == 0)) {
-				System.out.println("you are connected");
+				System.out.println("you are connected\n");
+				System.out.println("global msg:  @ msg OR / msg");
+				System.out.println("private msg: @dest 0 msg [for txt msg]");
+				System.out.println("             @dest 1 fileName [for file sending]");
+				System.out.println("logout:      logout\n");
 				ClientContext ctx = (ClientContext) key.attachment();
 
 				if (ctx == null) {

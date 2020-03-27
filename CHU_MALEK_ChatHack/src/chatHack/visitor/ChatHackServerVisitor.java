@@ -77,10 +77,10 @@ public class ChatHackServerVisitor implements FrameVisitor {
 		System.out.println("log out");
 
 		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(frame.getMsg());
-		ByteBuffer buff = ByteBuffer.allocate(2 * Byte.BYTES + Integer.BYTES + msgBuff.remaining());
+		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + Integer.BYTES + msgBuff.remaining());
 
 		buff.put((byte) 5);
-		buff.put(frame.getLogoutType());
+//		buff.put(frame.getLogoutType());
 		buff.putInt(msgBuff.remaining());
 		buff.put(msgBuff);
 		buff.flip();

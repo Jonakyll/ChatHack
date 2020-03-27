@@ -12,6 +12,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -28,9 +30,12 @@ public class ServerChatHack {
 	private final SocketChannel sc;
 	private SelectionKey MDPKey;
 
-	private final SynchronizedClients<String> clientsString = new SynchronizedClients<>();
-	private final SynchronizedClients<Long> clientsLong = new SynchronizedClients<>();
-
+//	private final SynchronizedClients<String> clientsString = new SynchronizedClients<>();
+//	private final SynchronizedClients<Long> clientsLong = new SynchronizedClients<>();
+	private final Map<String, SelectionKey> clientsString = new HashMap<>();
+	private final Map<Long, SelectionKey> clientsLong = new HashMap<>();
+	
+	
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
 		this.MDPPort = MDPPort;
@@ -152,16 +157,16 @@ public class ServerChatHack {
 	}
 
 	public void removeClient(SelectionKey key, ByteBuffer buff) {
-		for (String name : clientsString.keySet()) {
-			if (clientsString.get(name) == key) {
-				clientsString.remove(name);
-			}
-		}
-		for (long id : clientsLong.keySet()) {
-			if (clientsLong.get(id) == key) {
-				clientsLong.remove(id);
-			}
-		}
+//		for (String name : clientsString.keySet()) {
+//			if (clientsString.get(name) == key) {
+//				clientsString.remove(name);
+//			}
+//		}
+//		for (long id : clientsLong.keySet()) {
+//			if (clientsLong.get(id) == key) {
+//				clientsLong.remove(id);
+//			}
+//		}
 		ServerContext ctx = (ServerContext) key.attachment();
 		if (ctx == null) {
 			return;

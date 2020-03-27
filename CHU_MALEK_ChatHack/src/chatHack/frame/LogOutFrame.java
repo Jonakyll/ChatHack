@@ -4,14 +4,12 @@ import chatHack.visitor.FrameVisitor;
 
 public class LogOutFrame implements Frame {
 
-	private final byte logoutType;
 	private final String msg;
 	
-	public LogOutFrame(byte logoutType, String msg) {
-		this.logoutType = logoutType;
+	public LogOutFrame(String msg) {
 		this.msg = msg;
 	}
-
+	
 	@Override
 	public String toString() {
 		return msg;
@@ -20,10 +18,6 @@ public class LogOutFrame implements Frame {
 	@Override
 	public void accept(FrameVisitor visitor) {
 		visitor.visitLogOutFrame(this);
-	}
-	
-	public byte getLogoutType() {
-		return logoutType;
 	}
 	
 	public String getMsg() {

@@ -72,7 +72,7 @@ public class FrameToServerReader implements Reader<Frame> {
 			break;
 			
 		case 5:
-			reader = new LogOutToServerReader(bb);
+			reader = new LogOutToServerReader();
 			break;
 
 		default:

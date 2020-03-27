@@ -16,7 +16,7 @@ public class PrivateMsgCnxToDstFrame implements Frame {
 
 	@Override
 	public String toString() {
-		return src + " wants to start a private conversation with you.\n0     = accept\nother = decline";
+		return src + " wants to start a private conversation with you.\n\n0     = accept\nother = decline";
 	}
 
 	@Override

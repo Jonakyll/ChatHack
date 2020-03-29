@@ -56,6 +56,8 @@ public class ClientChatHack {
 
 	private String lastDst;
 	private long lastToken;
+	
+	private final static int MAX_FILE_SIZE = 4_096;
 
 	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
 			throws IOException {
@@ -431,10 +433,14 @@ public class ClientChatHack {
 		// envoie du nom du fichier plus les bytes du fichier
 		Path path = Paths.get(this.path + "/" + msg);
 		try (FileChannel fc = FileChannel.open(path, StandardOpenOption.READ)) {
+			if (fc.size() > MAX_FILE_SIZE) {
+				System.out.println("the file is too big, cannot send it");
+				return;
+			}
 			ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(login);
 			ByteBuffer fileNameBuff = StandardCharsets.UTF_8.encode(msg);
-			ByteBuffer msgBuff = ByteBuffer.allocate(4096);
-			while (fc.read(msgBuff) != -1) {
+			ByteBuffer msgBuff = ByteBuffer.allocate(MAX_FILE_SIZE);
+			while (fc.read(msgBuff) != -1 && msgBuff.hasRemaining()) {
 				;
 			}
 			msgBuff.flip();

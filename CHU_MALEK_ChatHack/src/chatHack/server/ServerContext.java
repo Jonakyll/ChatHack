@@ -15,7 +15,7 @@ import chatHack.visitor.FrameVisitor;
 
 public class ServerContext {
 
-	private static int BUFFER_SIZE = 1_024;
+	private static int BUFFER_SIZE = 4_096;
 
 	private final SelectionKey key;
 	private final SocketChannel sc;

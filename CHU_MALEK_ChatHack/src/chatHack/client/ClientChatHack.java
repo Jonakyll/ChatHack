@@ -23,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
+import chatHack.context.ClientContext;
 import chatHack.frame.PrivateMsgFrame;
 
 public class ClientChatHack {
@@ -520,7 +521,7 @@ public class ClientChatHack {
 		SocketChannel sc = SocketChannel.open();
 		sc.configureBlocking(false);
 		sc.connect(sa);
-		SelectionKey clientKey = sc.register(selector, SelectionKey.OP_CONNECT | SelectionKey.OP_WRITE);
+		SelectionKey clientKey = sc.register(selector, SelectionKey.OP_CONNECT);
 
 		clients.put(lastDst, new Client(lastToken, clientKey));
 		clientKey.attach(new ClientContext(this, clientKey));

@@ -1,4 +1,4 @@
-package chatHack.server;
+package chatHack.context;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,46 +10,43 @@ import java.util.Queue;
 import chatHack.frame.Frame;
 import chatHack.reader.FrameToServerReader;
 import chatHack.reader.Reader;
-import chatHack.visitor.ChatHackServerVisitor;
+import chatHack.server.ServerChatHack;
 import chatHack.visitor.FrameVisitor;
+import chatHack.visitor.MDPVisitor;
 
-public class ServerContext {
-
-	private static int BUFFER_SIZE = 4_096;
-
+public class MDPContext implements Context {
+	
+	private final static int BUFFER_SIZE = 1_024;
+	
 	private final SelectionKey key;
 	private final SocketChannel sc;
+	private final ServerChatHack server;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
 	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
-
+	
 	private final Queue<ByteBuffer> queue = new LinkedList<>();
 	private final Reader<Frame> reader = new FrameToServerReader(bbin);
-	
-	private final FrameVisitor visitor;
-	
-	public ServerContext(ServerChatHack server, SelectionKey key) {
+	private FrameVisitor visitor;
+
+	public MDPContext(ServerChatHack server, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
-		this.visitor = new ChatHackServerVisitor(key, server);
+		this.server = server;
+		this.visitor = new MDPVisitor(key, server, this);
 	}
 	
-	public SelectionKey getKey() {
-		return key;
-	}
-
-	private void processIn() {
-
+	@Override
+	public void processIn() {
 		for (;;) {
 			Reader.ProcessStatus status = reader.process();
 
 			switch (status) {
-			case DONE: {
+			case DONE:
 				Frame frame = (Frame) reader.get();
 				frame.accept(visitor);
 				reader.reset();
 				break;
-			}
 
 			case REFILL:
 				return;
@@ -60,20 +57,23 @@ public class ServerContext {
 			}
 		}
 	}
-
+	
+	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
 		processOut();
 		updateInterestOps();
 	}
 
-	private void processOut() {
+	@Override
+	public void processOut() {
 		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
 			bbout.put(queue.poll());
 		}
 	}
 
-	private void updateInterestOps() {
+	@Override
+	public void updateInterestOps() {
 		int ops = 0;
 
 		if (bbin.hasRemaining() && !closed) {
@@ -89,6 +89,7 @@ public class ServerContext {
 		}
 	}
 
+	@Override
 	public void silentlyClose() {
 		try {
 			sc.close();
@@ -96,7 +97,8 @@ public class ServerContext {
 
 		}
 	}
-	
+
+	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
 			return;
@@ -104,6 +106,7 @@ public class ServerContext {
 		updateInterestOps();
 	}
 
+	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
 		sc.write(bbout);
@@ -113,6 +116,7 @@ public class ServerContext {
 		updateInterestOps();
 	}
 
+	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
 			closed = true;
@@ -121,9 +125,10 @@ public class ServerContext {
 		processIn();
 		updateInterestOps();
 	}
-
-	public void close() {
-		closed = true;
+	
+	@Override
+	public SelectionKey getKey() {
+		return key;
 	}
-
+	
 }

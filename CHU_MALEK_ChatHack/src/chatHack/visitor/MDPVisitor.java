@@ -1,11 +1,9 @@
 package chatHack.visitor;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 
-import chatHack.client.ClientChatHack;
-import chatHack.context.ClientContext;
+import chatHack.context.MDPContext;
 import chatHack.frame.GlobalMsgFrame;
 import chatHack.frame.LogNoPwdToMDPFrame;
 import chatHack.frame.LogOutFrame;
@@ -17,119 +15,77 @@ import chatHack.frame.PrivateMsgCnxRefusedToServerFrame;
 import chatHack.frame.PrivateMsgCnxToDstFrame;
 import chatHack.frame.PrivateMsgFrame;
 import chatHack.frame.SimpleMsgFrame;
+import chatHack.server.ServerChatHack;
 
-public class ChatHackClientVIsitor implements FrameVisitor {
+public class MDPVisitor implements FrameVisitor {
 
 	private final SelectionKey key;
-	private final ClientChatHack client;
-
-	public ChatHackClientVIsitor(SelectionKey key, ClientChatHack client) {
+	private final ServerChatHack server;
+	private final MDPContext ctx;
+	
+	public MDPVisitor(SelectionKey key, ServerChatHack server, MDPContext ctx) {
 		this.key = key;
-		this.client = client;
+		this.server = server;
+		this.ctx = ctx;
 	}
-
+	
 	@Override
 	public ByteBuffer visitGlobalMsgFrame(GlobalMsgFrame frame) {
-		System.out.println(frame);
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
-		System.out.println(frame);
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
-		System.out.println(frame);
-		ClientContext ctx = (ClientContext) key.attachment();
-		if (ctx == null) {
-			return null;
-		}
-		ctx.close();
-		ctx.silentlyClose();
-		client.disconnect(key);
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
-		System.out.println(frame);
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
-		try {
-			System.out.println(frame);
-			client.connectToClient(frame.getDst(), frame.getIp(), frame.getPort(), frame.getToken());
-		} catch (IOException e) {
-			return null;
-		}
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitPrivateMsgCnxRefusedToClientFrame(PrivateMsgCnxRefusedToClientFrame frame) {
-		System.out.println(frame);
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitPrivateMsgCnxRefusedToServerFrame(PrivateMsgCnxRefusedToServerFrame frame) {
-		System.out.println(frame);
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
-		System.out.println(frame);
-		client.addSrc(frame.getSrc());
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitSimpleMsgFrame(SimpleMsgFrame frame) {
-		System.out.println(frame);
 		return null;
 	}
 
 	@Override
 	public ByteBuffer visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
-		try {
-			if ((client.withPassword() && frame.getOpcode() == 1)
-					|| (!client.withPassword() && frame.getOpcode() == 0)) {
-				System.out.println("you are connected\n");
-				System.out.println("global msg:  @ msg OR / msg");
-				System.out.println("private msg: @dest 0 msg [for txt msg]");
-				System.out.println("             @dest 1 fileName [for file sending]");
-				System.out.println("logout:      logout\n");
-				ClientContext ctx = (ClientContext) key.attachment();
-
-				if (ctx == null) {
-					return null;
-				}
-				ctx.connect();
-			} else {
-				client.sendLogout();
-			}
-			return null;
-		} catch (InterruptedException e) {
-			return null;
-		}
-
+		System.out.println("server mdp res");
+		ByteBuffer buff = frame.getByteBuffer();
+		
+		// a envoyer au client
+		server.sendToClientLong(frame.getId(), buff);
+		return buff;
 	}
 
 	@Override
 	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
-		try {
-			// ajouter la nouvelle src
-			client.addPrivateClient(frame.getSrc(), frame.getToken(), key);
-			client.writeMsg(frame);
-		} catch (IOException e) {
-			return null;
-		}
 		return null;
 	}
 

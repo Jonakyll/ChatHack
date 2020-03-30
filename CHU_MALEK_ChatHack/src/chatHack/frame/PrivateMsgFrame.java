@@ -1,5 +1,7 @@
 package chatHack.frame;
 
+import java.nio.ByteBuffer;
+
 import chatHack.visitor.FrameVisitor;
 
 public class PrivateMsgFrame implements Frame {
@@ -31,6 +33,12 @@ public class PrivateMsgFrame implements Frame {
 	}
 	
 	@Override
+	public ByteBuffer getByteBuffer() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
 	public String toString() {
 		return src + ": " + msg;
 	}
@@ -54,5 +62,6 @@ public class PrivateMsgFrame implements Frame {
 	public String getMsg() {
 		return msg;
 	}
+
 
 }

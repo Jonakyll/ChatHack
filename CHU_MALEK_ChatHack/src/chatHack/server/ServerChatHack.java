@@ -17,6 +17,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import chatHack.context.Context;
+import chatHack.context.MDPContext;
+import chatHack.context.ServerContext;
+
 public class ServerChatHack {
 
 	private static Logger logger = Logger.getLogger(ServerChatHack.class.getName());
@@ -32,8 +36,8 @@ public class ServerChatHack {
 
 //	private final SynchronizedClients<String> clientsString = new SynchronizedClients<>();
 //	private final SynchronizedClients<Long> clientsLong = new SynchronizedClients<>();
-	private final Map<String, SelectionKey> clientsString = new HashMap<>();
-	private final Map<Long, SelectionKey> clientsLong = new HashMap<>();
+	private final Map<String, Context> clientsString = new HashMap<>();
+	private final Map<Long, Context> clientsLong = new HashMap<>();
 	
 	
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
@@ -51,7 +55,7 @@ public class ServerChatHack {
 		sc.configureBlocking(false);
 		sc.connect(socketAdress);
 		MDPKey = sc.register(selector, SelectionKey.OP_CONNECT);
-		MDPKey.attach(new ServerContext(this, MDPKey));
+		MDPKey.attach(new MDPContext(this, MDPKey));
 
 		serverSocketChannel.configureBlocking(false);
 		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -82,13 +86,13 @@ public class ServerChatHack {
 
 		try {
 			if (key.isValid() && key.isConnectable()) {
-				((ServerContext) key.attachment()).doConnect();
+				((Context) key.attachment()).doConnect();
 			}
 			if (key.isValid() && key.isWritable()) {
-				((ServerContext) key.attachment()).doWrite();
+				((Context) key.attachment()).doWrite();
 			}
 			if (key.isValid() && key.isReadable()) {
-				((ServerContext) key.attachment()).doRead();
+				((Context) key.attachment()).doRead();
 			}
 		} catch (IOException e) {
 			logger.info("Connection closed with client due to IOException");
@@ -117,27 +121,36 @@ public class ServerChatHack {
 	}
 
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
-		for (SelectionKey k : this.clientsString.values()) {
-			ServerContext ctx = (ServerContext) k.attachment();
+//		for (SelectionKey k : this.clientsString.values()) {
+//			ServerContext ctx = (ServerContext) k.attachment();
+//			if (ctx == null) {
+//				continue;
+//			}
+//			if (k != key) {
+//				ctx.queueFrame(buff.duplicate());
+//			}
+//		}
+		
+		for (Context ctx : this.clientsString.values()) {
 			if (ctx == null) {
 				continue;
 			}
-			if (k != key) {
+			if (ctx.getKey() != key) {
 				ctx.queueFrame(buff.duplicate());
 			}
 		}
 	}
 
-	public void addClientString(SelectionKey key, String name) {
-		this.clientsString.put(name, key);
+	public void addClientString(String name, Context ctx) {
+		this.clientsString.put(name, ctx);
 	}
 
-	public void addClientLong(SelectionKey key, long id) {
-		this.clientsLong.put(id, key);
+	public void addClientLong(long id, Context ctx) {
+		this.clientsLong.put(id, ctx);
 	}
 
 	public void sendToMDP(ByteBuffer buff) {
-		ServerContext ctx = (ServerContext) MDPKey.attachment();
+		Context ctx = (Context) MDPKey.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -145,11 +158,17 @@ public class ServerChatHack {
 	}
 
 	public void sendToClientLong(long id, ByteBuffer buff) {
-		SelectionKey key = clientsLong.get(id);
-		if (key == null) {
-			return;
-		}
-		ServerContext ctx = (ServerContext) key.attachment();
+//		SelectionKey key = clientsLong.get(id);
+//		if (key == null) {
+//			return;
+//		}
+//		ServerContext ctx = (ServerContext) key.attachment();
+//		if (ctx == null) {
+//			return;
+//		}
+//		ctx.queueFrame(buff);
+		
+		Context ctx = clientsLong.get(id);
 		if (ctx == null) {
 			return;
 		}
@@ -176,11 +195,17 @@ public class ServerChatHack {
 	}
 
 	public void sendToClientString(String dst, ByteBuffer buff) {
-		SelectionKey key = clientsString.get(dst);
-		if (key == null) {
-			return;
-		}
-		ServerContext ctx = (ServerContext) key.attachment();
+//		SelectionKey key = clientsString.get(dst);
+//		if (key == null) {
+//			return;
+//		}
+//		ServerContext ctx = (ServerContext) key.attachment();
+//		if (ctx == null) {
+//			return;
+//		}
+//		ctx.queueFrame(buff);
+		
+		Context ctx = clientsString.get(dst);
 		if (ctx == null) {
 			return;
 		}

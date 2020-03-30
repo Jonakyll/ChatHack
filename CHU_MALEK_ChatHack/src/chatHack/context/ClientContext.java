@@ -1,4 +1,4 @@
-package chatHack.client;
+package chatHack.context;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -8,13 +8,14 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import chatHack.client.ClientChatHack;
 import chatHack.frame.Frame;
 import chatHack.reader.FrameToClientReader;
 import chatHack.reader.Reader;
 import chatHack.visitor.ChatHackClientVIsitor;
 import chatHack.visitor.FrameVisitor;
 
-public class ClientContext {
+public class ClientContext implements Context {
 	
 	private static int BUFFER_SIZE = 4_096;
 	
@@ -40,7 +41,8 @@ public class ClientContext {
 		this.visitor = new ChatHackClientVIsitor(key, client);
 	}
 	
-	private void processIn() {
+	@Override
+	public void processIn() {
 		for (;;) {
 			Reader.ProcessStatus status = reader.process();
 
@@ -61,18 +63,21 @@ public class ClientContext {
 		}
 	}
 	
+	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
 		processOut();
 		updateInterestOps();
 	}
 	
+	@Override
 	public void processOut() {
 		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
 			bbout.put(queue.poll());
 		}
 	}
 	
+	@Override
 	public void updateInterestOps() {
 		int ops = 0;
 
@@ -89,6 +94,7 @@ public class ClientContext {
 		}
 	}
 	
+	@Override
 	public void silentlyClose() {
 		try {
 			sc.close();
@@ -97,6 +103,7 @@ public class ClientContext {
 		}
 	}
 
+	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
 			return;
@@ -104,6 +111,7 @@ public class ClientContext {
 		updateInterestOps();
 	}
 	
+	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
 		sc.write(bbout);
@@ -113,6 +121,7 @@ public class ClientContext {
 		updateInterestOps();
 	}
 	
+	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
 			closed = true;
@@ -120,6 +129,11 @@ public class ClientContext {
 		
 		processIn();
 		updateInterestOps();
+	}
+	
+	@Override
+	public SelectionKey getKey() {
+		return key;
 	}
 	
 	public void close() {

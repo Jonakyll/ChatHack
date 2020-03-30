@@ -1,5 +1,8 @@
 package chatHack.frame;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
 import chatHack.visitor.FrameVisitor;
 
 public class SimpleMsgFrame implements Frame {
@@ -20,6 +23,19 @@ public class SimpleMsgFrame implements Frame {
 	@Override
 	public void accept(FrameVisitor visitor) {
 		visitor.visitSimpleMsgFrame(this);
+	}
+	
+	@Override
+	public ByteBuffer getByteBuffer() {
+		ByteBuffer msgBuff = StandardCharsets.UTF_8.encode(msg);
+		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES + Integer.BYTES + msgBuff.remaining());
+
+		buff.put(opcode);
+		buff.putInt(msgBuff.remaining());
+		buff.put(msgBuff);
+		buff.flip();
+		
+		return buff;
 	}
 	
 	public String getMsg() {

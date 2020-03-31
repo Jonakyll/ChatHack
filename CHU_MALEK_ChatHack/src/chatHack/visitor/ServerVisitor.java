@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 
 import chatHack.client.ClientChatHack;
-import chatHack.context.ClientContext;
+import chatHack.context.ServerContext;
 import chatHack.frame.GlobalMsgFrame;
 import chatHack.frame.LogNoPwdToMDPFrame;
 import chatHack.frame.LogOutFrame;
@@ -18,12 +18,12 @@ import chatHack.frame.PrivateMsgCnxToDstFrame;
 import chatHack.frame.PrivateMsgFrame;
 import chatHack.frame.SimpleMsgFrame;
 
-public class ChatHackClientVIsitor implements FrameVisitor {
+public class ServerVisitor implements FrameVisitor {
 
 	private final SelectionKey key;
 	private final ClientChatHack client;
 
-	public ChatHackClientVIsitor(SelectionKey key, ClientChatHack client) {
+	public ServerVisitor(SelectionKey key, ClientChatHack client) {
 		this.key = key;
 		this.client = client;
 	}
@@ -43,7 +43,7 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 	@Override
 	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
 		System.out.println(frame);
-		ClientContext ctx = (ClientContext) key.attachment();
+		ServerContext ctx = (ServerContext) key.attachment();
 		if (ctx == null) {
 			return null;
 		}
@@ -105,12 +105,11 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 				System.out.println("private msg: @dest 0 msg [for txt msg]");
 				System.out.println("             @dest 1 fileName [for file sending]");
 				System.out.println("logout:      logout\n");
-				ClientContext ctx = (ClientContext) key.attachment();
+				ServerContext ctx = (ServerContext) key.attachment();
 
 				if (ctx == null) {
 					return null;
 				}
-				ctx.connect();
 			} else {
 				client.sendLogout();
 			}
@@ -123,13 +122,6 @@ public class ChatHackClientVIsitor implements FrameVisitor {
 
 	@Override
 	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
-		try {
-			// ajouter la nouvelle src
-			client.addPrivateClient(frame.getSrc(), frame.getToken(), key);
-			client.writeMsg(frame);
-		} catch (IOException e) {
-			return null;
-		}
 		return null;
 	}
 

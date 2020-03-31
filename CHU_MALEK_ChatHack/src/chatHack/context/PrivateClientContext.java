@@ -2,7 +2,6 @@ package chatHack.context;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.BlockingQueue;
@@ -12,16 +11,15 @@ import chatHack.client.ClientChatHack;
 import chatHack.frame.Frame;
 import chatHack.reader.FrameToClientReader;
 import chatHack.reader.Reader;
-import chatHack.visitor.ChatHackClientVIsitor;
+import chatHack.visitor.PrivateClientVisitor;
 import chatHack.visitor.FrameVisitor;
 
-public class ClientContext implements Context {
+public class PrivateClientContext implements Context {
 	
-	private static int BUFFER_SIZE = 4_096;
+	private static int BUFFER_SIZE = 1_024;
 	
 	private final SelectionKey key;
 	private final SocketChannel sc;
-	private final ClientChatHack client;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocateDirect(BUFFER_SIZE);
 	private final ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
@@ -31,14 +29,10 @@ public class ClientContext implements Context {
 	private final Reader<Frame> reader = new FrameToClientReader(bbin);
 	private final FrameVisitor visitor;
 	
-	private boolean connected = false;
-
-	
-	public ClientContext(ClientChatHack client, SelectionKey key) {
+	public PrivateClientContext(ClientChatHack client, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
-		this.client = client;
-		this.visitor = new ChatHackClientVIsitor(key, client);
+		this.visitor = new PrivateClientVisitor(key, client);
 	}
 	
 	@Override
@@ -138,9 +132,5 @@ public class ClientContext implements Context {
 	
 	public void close() {
 		closed = true;
-	}
-	
-	public void connect() {
-		connected = true;
 	}
 }

@@ -11,29 +11,34 @@ import chatHack.frame.Frame;
 import chatHack.reader.FrameToServerReader;
 import chatHack.reader.Reader;
 import chatHack.server.ServerChatHack;
+import chatHack.visitor.PublicClientNotAuthVisitor;
 import chatHack.visitor.FrameVisitor;
-import chatHack.visitor.MDPVisitor;
+import chatHack.visitor.PublicClientAuthVisitor;
 
-public class MDPContext implements Context {
-	
-	private final static int BUFFER_SIZE = 1_024;
-	
+public class PublicClientContext implements Context {
+
+	private static int BUFFER_SIZE = 4_096;
+
 	private final SelectionKey key;
 	private final SocketChannel sc;
+	private final ServerChatHack server;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
 	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
-	
+
 	private final Queue<ByteBuffer> queue = new LinkedList<>();
 	private final Reader<Frame> reader = new FrameToServerReader(bbin);
 	private FrameVisitor visitor;
-
-	public MDPContext(ServerChatHack server, SelectionKey key) {
+	
+	private boolean authenticated = false;
+	
+	public PublicClientContext(ServerChatHack server, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
-		this.visitor = new MDPVisitor(server);
+		this.server = server;
+		this.visitor = new PublicClientNotAuthVisitor(server, this);
 	}
-	
+
 	@Override
 	public void processIn() {
 		for (;;) {
@@ -55,7 +60,7 @@ public class MDPContext implements Context {
 			}
 		}
 	}
-	
+
 	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
@@ -95,7 +100,7 @@ public class MDPContext implements Context {
 
 		}
 	}
-
+	
 	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -123,10 +128,27 @@ public class MDPContext implements Context {
 		processIn();
 		updateInterestOps();
 	}
-	
+
 	@Override
 	public SelectionKey getKey() {
 		return key;
 	}
 	
+	public void close() {
+		closed = true;
+	}
+
+	public void authenticate() {
+		authenticated = true;
+		updateVisitor();
+	}
+	
+	private void updateVisitor() {
+		if (authenticated) {
+			visitor = new PublicClientAuthVisitor(key, server);
+		} else {
+			visitor = new PublicClientNotAuthVisitor(server, this);
+		}
+	}
+
 }

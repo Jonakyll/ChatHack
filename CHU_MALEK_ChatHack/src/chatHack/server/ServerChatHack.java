@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 
 import chatHack.context.Context;
 import chatHack.context.MDPContext;
-import chatHack.context.ServerContext;
+import chatHack.context.PublicClientContext;
 
 public class ServerChatHack {
 
@@ -34,10 +34,8 @@ public class ServerChatHack {
 	private final SocketChannel sc;
 	private SelectionKey MDPKey;
 
-//	private final SynchronizedClients<String> clientsString = new SynchronizedClients<>();
-//	private final SynchronizedClients<Long> clientsLong = new SynchronizedClients<>();
-	private final Map<String, Context> clientsString = new HashMap<>();
-	private final Map<Long, Context> clientsLong = new HashMap<>();
+	private final Map<String, PublicClientContext> clientsString = new HashMap<>();
+	private final Map<Long, PublicClientContext> clientsLong = new HashMap<>();
 	
 	
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
@@ -106,7 +104,7 @@ public class ServerChatHack {
 		if (sc != null) {
 			sc.configureBlocking(false);
 			SelectionKey clientKey = sc.register(selector, SelectionKey.OP_READ);
-			clientKey.attach(new ServerContext(this, clientKey));
+			clientKey.attach(new PublicClientContext(this, clientKey));
 		}
 	}
 
@@ -121,17 +119,7 @@ public class ServerChatHack {
 	}
 
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
-//		for (SelectionKey k : this.clientsString.values()) {
-//			ServerContext ctx = (ServerContext) k.attachment();
-//			if (ctx == null) {
-//				continue;
-//			}
-//			if (k != key) {
-//				ctx.queueFrame(buff.duplicate());
-//			}
-//		}
-		
-		for (Context ctx : this.clientsString.values()) {
+		for (PublicClientContext ctx : this.clientsString.values()) {
 			if (ctx == null) {
 				continue;
 			}
@@ -141,16 +129,16 @@ public class ServerChatHack {
 		}
 	}
 
-	public void addClientString(String name, Context ctx) {
+	public void addClientString(String name, PublicClientContext ctx) {
 		this.clientsString.put(name, ctx);
 	}
 
-	public void addClientLong(long id, Context ctx) {
+	public void addClientLong(long id, PublicClientContext ctx) {
 		this.clientsLong.put(id, ctx);
 	}
 
 	public void sendToMDP(ByteBuffer buff) {
-		Context ctx = (Context) MDPKey.attachment();
+		MDPContext ctx = (MDPContext) MDPKey.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -158,21 +146,12 @@ public class ServerChatHack {
 	}
 
 	public void sendToClientLong(long id, ByteBuffer buff) {
-//		SelectionKey key = clientsLong.get(id);
-//		if (key == null) {
-//			return;
-//		}
-//		ServerContext ctx = (ServerContext) key.attachment();
-//		if (ctx == null) {
-//			return;
-//		}
-//		ctx.queueFrame(buff);
-		
-		Context ctx = clientsLong.get(id);
+		PublicClientContext ctx = clientsLong.get(id);
 		if (ctx == null) {
 			return;
 		}
 		ctx.queueFrame(buff);
+		ctx.authenticate();
 	}
 
 	public void removeClient(SelectionKey key, ByteBuffer buff) {
@@ -186,7 +165,7 @@ public class ServerChatHack {
 //				clientsLong.remove(id);
 //			}
 //		}
-		ServerContext ctx = (ServerContext) key.attachment();
+		PublicClientContext ctx = (PublicClientContext) key.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -195,16 +174,6 @@ public class ServerChatHack {
 	}
 
 	public void sendToClientString(String dst, ByteBuffer buff) {
-//		SelectionKey key = clientsString.get(dst);
-//		if (key == null) {
-//			return;
-//		}
-//		ServerContext ctx = (ServerContext) key.attachment();
-//		if (ctx == null) {
-//			return;
-//		}
-//		ctx.queueFrame(buff);
-		
 		Context ctx = clientsString.get(dst);
 		if (ctx == null) {
 			return;

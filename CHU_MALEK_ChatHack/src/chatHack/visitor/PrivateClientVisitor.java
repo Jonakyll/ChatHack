@@ -1,7 +1,10 @@
 package chatHack.visitor;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 
+import chatHack.client.ClientChatHack;
 import chatHack.frame.GlobalMsgFrame;
 import chatHack.frame.LogNoPwdToMDPFrame;
 import chatHack.frame.LogOutFrame;
@@ -13,16 +16,17 @@ import chatHack.frame.PrivateMsgCnxRefusedToServerFrame;
 import chatHack.frame.PrivateMsgCnxToDstFrame;
 import chatHack.frame.PrivateMsgFrame;
 import chatHack.frame.SimpleMsgFrame;
-import chatHack.server.ServerChatHack;
 
-public class MDPVisitor implements FrameVisitor {
+public class PrivateClientVisitor implements FrameVisitor {
 
-	private final ServerChatHack server;
-	
-	public MDPVisitor(ServerChatHack server) {
-		this.server = server;
+	private final SelectionKey key;
+	private final ClientChatHack client;
+
+	public PrivateClientVisitor(SelectionKey key, ClientChatHack client) {
+		this.key = key;
+		this.client = client;
 	}
-	
+
 	@Override
 	public ByteBuffer visitGlobalMsgFrame(GlobalMsgFrame frame) {
 		return null;
@@ -70,16 +74,18 @@ public class MDPVisitor implements FrameVisitor {
 
 	@Override
 	public ByteBuffer visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
-		System.out.println("server mdp res");
-		ByteBuffer buff = frame.getByteBuffer();
-		
-		// a envoyer au client
-		server.sendToClientLong(frame.getId(), buff);
-		return buff;
+		return null;
 	}
 
 	@Override
 	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
+		try {
+			// ajouter la nouvelle src
+			client.addPrivateClient(frame.getSrc(), frame.getToken(), key);
+			client.writeMsg(frame);
+		} catch (IOException e) {
+			return null;
+		}
 		return null;
 	}
 

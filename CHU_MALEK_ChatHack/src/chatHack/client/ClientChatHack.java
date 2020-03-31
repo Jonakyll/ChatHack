@@ -23,7 +23,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
-import chatHack.context.ClientContext;
+import chatHack.context.ServerContext;
+import chatHack.context.Context;
+import chatHack.context.PrivateClientContext;
 import chatHack.frame.PrivateMsgFrame;
 
 public class ClientChatHack {
@@ -80,7 +82,7 @@ public class ClientChatHack {
 		serverKey = sc.register(selector, SelectionKey.OP_CONNECT);
 
 		// pour n'envoyer qu'au serveur
-		serverKey.attach(new ClientContext(this, serverKey));
+		serverKey.attach(new ServerContext(this, serverKey));
 		System.out.println("Connection to: " + socketAddress.toString());
 	}
 
@@ -115,7 +117,7 @@ public class ClientChatHack {
 		}
 
 		try {
-			ClientContext ctx = (ClientContext) key.attachment();
+			Context ctx = (Context) key.attachment();
 			if (ctx == null) {
 				return;
 			}
@@ -124,15 +126,15 @@ public class ClientChatHack {
 
 			if (key.isValid() && key.isConnectable()) {
 				System.out.println("You are connected to a channel");
-				((ClientContext) key.attachment()).doConnect();
+				((Context) key.attachment()).doConnect();
 			}
 
 			if (key.isValid() && key.isWritable()) {
-				((ClientContext) key.attachment()).doWrite();
+				((Context) key.attachment()).doWrite();
 			}
 
 			if (key.isValid() && key.isReadable()) {
-				((ClientContext) key.attachment()).doRead();
+				((Context) key.attachment()).doRead();
 			}
 		} catch (IOException e) {
 			logger.info("Connection closed with client due to IOException");
@@ -146,7 +148,7 @@ public class ClientChatHack {
 		if (sc != null) {
 			sc.configureBlocking(false);
 			SelectionKey clientKey = sc.register(selector, SelectionKey.OP_READ);
-			clientKey.attach(new ClientContext(this, clientKey));
+			clientKey.attach(new PrivateClientContext(this, clientKey));
 			
 			addPrivateClient(lastDst, lastToken, clientKey);
 		}
@@ -174,7 +176,7 @@ public class ClientChatHack {
 
 	private void connectToServer() {
 		cnxThread = new Thread(() -> {
-			ClientContext ctx = (ClientContext) serverKey.attachment();
+			ServerContext ctx = (ServerContext) serverKey.attachment();
 			if (ctx == null) {
 				return;
 			}
@@ -273,7 +275,7 @@ public class ClientChatHack {
 	}
 
 	private void acceptPrivateCnx(Scanner scan, Random random) throws IOException {
-		ClientContext ctx = (ClientContext) serverKey.attachment();
+		ServerContext ctx = (ServerContext) serverKey.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -319,7 +321,7 @@ public class ClientChatHack {
 	}
 
 	private void declinePrivateCnx() {
-		ClientContext ctx = (ClientContext) serverKey.attachment();
+		ServerContext ctx = (ServerContext) serverKey.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -335,7 +337,7 @@ public class ClientChatHack {
 	}
 
 	private void sendGlobalMsg(String msg) throws InterruptedException {
-		ClientContext ctx = (ClientContext) serverKey.attachment();
+		ServerContext ctx = (ServerContext) serverKey.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -365,7 +367,7 @@ public class ClientChatHack {
 
 	private void sendPrivateCnx(String dst) {
 		// envoyer une demande de connexion privee au serveur
-		ClientContext ctx = (ClientContext) serverKey.attachment();
+		ServerContext ctx = (ServerContext) serverKey.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -417,7 +419,7 @@ public class ClientChatHack {
 
 		// envoyer le paquet au bon dst
 		Client clientDst = clients.get(dst);
-		ClientContext ctx = (ClientContext) clientDst.getKey().attachment();
+		PrivateClientContext ctx = (PrivateClientContext) clientDst.getKey().attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -461,7 +463,7 @@ public class ClientChatHack {
 			buff.flip();
 
 			Client clientDst = clients.get(dst);
-			ClientContext ctx = (ClientContext) clientDst.getKey().attachment();
+			PrivateClientContext ctx = (PrivateClientContext) clientDst.getKey().attachment();
 			if (ctx == null) {
 				return;
 			}
@@ -475,7 +477,7 @@ public class ClientChatHack {
 	}
 
 	public void sendLogout() throws InterruptedException {
-		ClientContext ctx = (ClientContext) serverKey.attachment();
+		ServerContext ctx = (ServerContext) serverKey.attachment();
 		if (ctx == null) {
 			return;
 		}
@@ -524,7 +526,7 @@ public class ClientChatHack {
 		SelectionKey clientKey = sc.register(selector, SelectionKey.OP_CONNECT);
 
 		clients.put(lastDst, new Client(lastToken, clientKey));
-		clientKey.attach(new ClientContext(this, clientKey));
+		clientKey.attach(new PrivateClientContext(this, clientKey));
 		System.out.println("Connected to: " + dst + " /" + ip + ":" + port);
 
 	}

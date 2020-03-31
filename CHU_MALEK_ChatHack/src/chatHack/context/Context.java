@@ -23,5 +23,5 @@ public interface Context {
 	void doRead() throws IOException;
 	
 	SelectionKey getKey();
-	
+
 }

@@ -4,38 +4,37 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import chatHack.client.ClientChatHack;
 import chatHack.frame.Frame;
-import chatHack.reader.FrameToServerReader;
+import chatHack.reader.FrameToClientReader;
 import chatHack.reader.Reader;
-import chatHack.server.ServerChatHack;
-import chatHack.visitor.ChatHackServerVisitor;
+import chatHack.visitor.ServerVisitor;
 import chatHack.visitor.FrameVisitor;
 
 public class ServerContext implements Context {
-
-	private static int BUFFER_SIZE = 4_096;
-
+	
+	private static int BUFFER_SIZE = 1_024;
+	
 	private final SelectionKey key;
 	private final SocketChannel sc;
-	private final ServerChatHack server;
 	private boolean closed = false;
-	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
-	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
+	private final ByteBuffer bbin = ByteBuffer.allocateDirect(BUFFER_SIZE);
+	private final ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
+	
+	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
 
-	private final Queue<ByteBuffer> queue = new LinkedList<>();
-	private final Reader<Frame> reader = new FrameToServerReader(bbin);
+	private final Reader<Frame> reader = new FrameToClientReader(bbin);
 	private final FrameVisitor visitor;
 	
-	public ServerContext(ServerChatHack server, SelectionKey key) {
+	public ServerContext(ClientChatHack client, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
-		this.server = server;
-		this.visitor = new ChatHackServerVisitor(key, server, this);
+		this.visitor = new ServerVisitor(key, client);
 	}
-
+	
 	@Override
 	public void processIn() {
 		for (;;) {
@@ -57,21 +56,21 @@ public class ServerContext implements Context {
 			}
 		}
 	}
-
+	
 	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
 		processOut();
 		updateInterestOps();
 	}
-
+	
 	@Override
 	public void processOut() {
 		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
 			bbout.put(queue.poll());
 		}
 	}
-
+	
 	@Override
 	public void updateInterestOps() {
 		int ops = 0;
@@ -88,7 +87,7 @@ public class ServerContext implements Context {
 			key.interestOps(ops);
 		}
 	}
-
+	
 	@Override
 	public void silentlyClose() {
 		try {
@@ -97,7 +96,7 @@ public class ServerContext implements Context {
 
 		}
 	}
-	
+
 	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -105,27 +104,27 @@ public class ServerContext implements Context {
 		}
 		updateInterestOps();
 	}
-
+	
 	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
 		sc.write(bbout);
 		bbout.compact();
-
+		
 		processOut();
 		updateInterestOps();
 	}
-
+	
 	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
 			closed = true;
 		}
-
+		
 		processIn();
 		updateInterestOps();
 	}
-
+	
 	@Override
 	public SelectionKey getKey() {
 		return key;
@@ -134,5 +133,5 @@ public class ServerContext implements Context {
 	public void close() {
 		closed = true;
 	}
-
+	
 }

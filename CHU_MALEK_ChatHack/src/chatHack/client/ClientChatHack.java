@@ -37,9 +37,9 @@ public class ClientChatHack {
 	private final Selector selector;
 	private SelectionKey serverKey;
 
-	private Thread mainThread;
-	private Thread readThread;
-	private Thread cnxThread;
+	private Thread main;
+	private Thread console;
+	private Thread connectToServer;
 
 	private final String ip;
 	private final int port;
@@ -51,7 +51,7 @@ public class ClientChatHack {
 	private final Map<String, Client> clients = new HashMap<>();
 
 	private final BlockingQueue<String> sources = new LinkedBlockingQueue<>();
-	private boolean cnxRequest = false;
+	private boolean privateCnxRequest = false;
 	private int portForPrivate = -1;
 	private ServerSocketChannel ssc;
 
@@ -59,8 +59,8 @@ public class ClientChatHack {
 
 	private String lastDst;
 	private long lastToken;
-	
-	private final static int MAX_FILE_SIZE = 4_096;
+
+	private final BlockingQueue<String> consoleQueue = new LinkedBlockingQueue<String>();
 
 	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
 			throws IOException {
@@ -87,23 +87,23 @@ public class ClientChatHack {
 	}
 
 	private void launch() throws IOException {
-		synchronized (monitor) {
-
-			mainThread = new Thread(() -> {
-				try {
-					while (!Thread.interrupted()) {
-						try {
-							selector.select(this::treatKey);
-						} catch (UncheckedIOException tunneled) {
-							throw tunneled.getCause();
-						}
+		main = new Thread(() -> {
+			try {
+				while (!Thread.interrupted()) {
+					try {
+						selector.select(this::treatKey);
+						treatConsoleQueue();
+					} catch (InterruptedException e) {
+						return;
+					} catch (UncheckedIOException tunneled) {
+						throw tunneled.getCause();
 					}
-				} catch (IOException e) {
-					return;
 				}
-			});
-			mainThread.start();
-		}
+			} catch (IOException e) {
+				return;
+			}
+		});
+		main.start();
 	}
 
 	private void treatKey(SelectionKey key) {
@@ -142,6 +142,31 @@ public class ClientChatHack {
 		}
 	}
 
+	private void treatConsoleQueue() throws InterruptedException {
+		String command = consoleQueue.poll();
+
+		if (command != null) {
+
+			// msg global
+			if (command.startsWith("/ ") || command.startsWith("@ ")) {
+				String msg = command.substring(2);
+				sendGlobalMsg(msg);
+			}
+
+			// msg prive
+			else if (command.startsWith("@")) {
+				String[] tokens = command.split(" ", 3);
+				String dst = tokens[0].substring(1);
+				sendPrivateMsg(dst, tokens[1], tokens[2]);
+			}
+
+			// logout
+			else if (command.equals("logout")) {
+				sendLogout();
+			}
+		}
+	}
+
 	private void doAccept(SelectionKey key) throws IOException {
 		SocketChannel sc = ssc.accept();
 
@@ -149,7 +174,7 @@ public class ClientChatHack {
 			sc.configureBlocking(false);
 			SelectionKey clientKey = sc.register(selector, SelectionKey.OP_READ);
 			clientKey.attach(new PrivateClientContext(this, clientKey));
-			
+
 			addPrivateClient(lastDst, lastToken, clientKey);
 		}
 	}
@@ -169,13 +194,13 @@ public class ClientChatHack {
 	}
 
 	public void disconnect(SelectionKey key) {
-		cnxThread.interrupt();
-		readThread.interrupt();
-		mainThread.interrupt();
+		connectToServer.interrupt();
+		console.interrupt();
+		main.interrupt();
 	}
 
 	private void connectToServer() {
-		cnxThread = new Thread(() -> {
+		connectToServer = new Thread(() -> {
 			ServerContext ctx = (ServerContext) serverKey.attachment();
 			if (ctx == null) {
 				return;
@@ -208,57 +233,34 @@ public class ClientChatHack {
 			ctx.queueFrame(bb);
 			selector.wakeup();
 		});
-		cnxThread.start();
+		connectToServer.start();
 	}
 
-	private void sendFrameToServer() {
-		synchronized (monitor) {
+	private void launchConsole() {
+		console = new Thread(() -> {
+			while (!Thread.interrupted()) {
+				try (Scanner scan = new Scanner(System.in)) {
+					String line;
 
-			readThread = new Thread(() -> {
-				while (!Thread.interrupted()) {
-					try (Scanner scan = new Scanner(System.in)) {
-						String line;
+					while (scan.hasNextLine()) {
 
-						while (scan.hasNextLine()) {
-							// il faut gerer tous les paquets possibles venant du client
-
-							if (cnxRequest && !sources.isEmpty()) {
-								// reponse a la demande de cnx privee
-								privateCnxRes(scan);
-
-							} else {
-								line = scan.nextLine();
-
-								// msg global
-								if (line.startsWith("/ ") || line.startsWith("@ ")) {
-									sendGlobalMsg(line.substring(2));
-								}
-
-								// msg prive
-								else if (line.startsWith("@")) {
-									String[] tokens = line.split(" ", 3);
-									String dst = tokens[0].substring(1);
-									sendPrivateMsg(dst, tokens[1], tokens[2]);
-								}
-
-								// logout
-								else if (line.equals("logout")) {
-									sendLogout();
-									selector.wakeup();
-									return;
-								}
-							}
-							selector.wakeup();
+						if (privateCnxRequest && !sources.isEmpty()) {
+							// reponse a la demande de cnx privee
+							privateCnxRes(scan);
+						} else {
+							line = scan.nextLine();
+							consoleQueue.put(line);
 						}
-					} catch (InterruptedException e) {
-						return;
-					} catch (IOException e) {
-						return;
+						selector.wakeup();
 					}
+				} catch (InterruptedException e) {
+					return;
+				} catch (IOException e) {
+					return;
 				}
-			});
-			readThread.start();
-		}
+			}
+		});
+		console.start();
 	}
 
 	private void privateCnxRes(Scanner scan) throws IOException {
@@ -271,7 +273,7 @@ public class ClientChatHack {
 		} else {
 			declinePrivateCnx();
 		}
-		cnxRequest = false;
+		privateCnxRequest = false;
 	}
 
 	private void acceptPrivateCnx(Scanner scan, Random random) throws IOException {
@@ -281,7 +283,6 @@ public class ClientChatHack {
 		}
 
 		// accepter la demande de connexion privee
-		// l'adresse ip sera une string mtn
 		if (portForPrivate == -1) {
 			System.out.println("on which port?");
 			portForPrivate = scan.nextInt();
@@ -423,7 +424,7 @@ public class ClientChatHack {
 		if (ctx == null) {
 			return;
 		}
-		
+
 		if (clientDst.getKey().isValid()) {
 			ctx.queueFrame(buff);
 		} else {
@@ -433,16 +434,11 @@ public class ClientChatHack {
 
 	private void sendPrivateFileToDst(String dst, String msg) throws IOException {
 		// envoie de fichier au client dst
-		// envoie du nom du fichier plus les bytes du fichier
 		Path path = Paths.get(this.path + "/" + msg);
 		try (FileChannel fc = FileChannel.open(path, StandardOpenOption.READ)) {
-			if (fc.size() > MAX_FILE_SIZE) {
-				System.out.println("the file is too big, cannot send it");
-				return;
-			}
 			ByteBuffer srcBuff = StandardCharsets.UTF_8.encode(login);
 			ByteBuffer fileNameBuff = StandardCharsets.UTF_8.encode(msg);
-			ByteBuffer msgBuff = ByteBuffer.allocate(MAX_FILE_SIZE);
+			ByteBuffer msgBuff = ByteBuffer.allocate((int) fc.size());
 			while (fc.read(msgBuff) != -1 && msgBuff.hasRemaining()) {
 				;
 			}
@@ -467,7 +463,7 @@ public class ClientChatHack {
 			if (ctx == null) {
 				return;
 			}
-			
+
 			if (clientDst.getKey().isValid()) {
 				ctx.queueFrame(buff);
 			} else {
@@ -481,15 +477,15 @@ public class ClientChatHack {
 		if (ctx == null) {
 			return;
 		}
-		ByteBuffer buff = ByteBuffer.allocate( Byte.BYTES);
+		ByteBuffer buff = ByteBuffer.allocate(Byte.BYTES);
 		buff.put((byte) 5);
 		buff.flip();
 		ctx.queueFrame(buff);
 	}
-	
+
 	public void addSrc(String src) {
 		synchronized (monitor) {
-			cnxRequest = true;
+			privateCnxRequest = true;
 			sources.add(src);
 		}
 	}
@@ -560,9 +556,9 @@ public class ClientChatHack {
 
 		ClientChatHack client = new ClientChatHack(ip, port, path, login, password, withPassword);
 		client.init();
+		client.launchConsole();
 		client.launch();
 		client.connectToServer();
-		client.sendFrameToServer();
 	}
 
 	private static void usage() {

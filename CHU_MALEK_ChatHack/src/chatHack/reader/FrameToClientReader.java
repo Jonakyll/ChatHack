@@ -33,7 +33,9 @@ public class FrameToClientReader implements Reader<Frame> {
 				return ProcessStatus.REFILL;
 			}
 
-			checkOpcode();
+			if (reader == null) {
+				checkOpcode();
+			}
 
 			ProcessStatus status = reader.process();
 			if (status != ProcessStatus.DONE) {
@@ -118,7 +120,7 @@ public class FrameToClientReader implements Reader<Frame> {
 
 	@Override
 	public void reset() {
-		reader.reset();
+		reader = null;
 		state = State.WAITING;
 	}
 

@@ -15,26 +15,26 @@ import chatHack.visitor.PrivateClientVisitor;
 import chatHack.visitor.FrameVisitor;
 
 public class PrivateClientContext implements Context {
-	
+
 	private static int BUFFER_SIZE = 1_024;
-	
+
 	private final SelectionKey key;
 	private final SocketChannel sc;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocateDirect(BUFFER_SIZE);
-	private final ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
-	
+	private ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
+
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
 
 	private final Reader<Frame> reader = new FrameToClientReader(bbin);
 	private final FrameVisitor visitor;
-	
+
 	public PrivateClientContext(ClientChatHack client, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
 		this.visitor = new PrivateClientVisitor(key, client);
 	}
-	
+
 	@Override
 	public void processIn() {
 		for (;;) {
@@ -56,21 +56,28 @@ public class PrivateClientContext implements Context {
 			}
 		}
 	}
-	
+
 	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
 		processOut();
 		updateInterestOps();
 	}
-	
+
 	@Override
 	public void processOut() {
-		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
+		while (!queue.isEmpty()) {
+			if (queue.peek().remaining() > bbout.remaining()) {
+				ByteBuffer tmp = ByteBuffer.allocate(queue.peek().capacity() + bbout.capacity());
+				bbout.flip();
+				tmp.put(bbout);
+				tmp.put(queue.peek());
+				bbout = tmp;
+			}
 			bbout.put(queue.poll());
 		}
 	}
-	
+
 	@Override
 	public void updateInterestOps() {
 		int ops = 0;
@@ -87,7 +94,7 @@ public class PrivateClientContext implements Context {
 			key.interestOps(ops);
 		}
 	}
-	
+
 	@Override
 	public void silentlyClose() {
 		try {
@@ -104,32 +111,32 @@ public class PrivateClientContext implements Context {
 		}
 		updateInterestOps();
 	}
-	
+
 	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
 		sc.write(bbout);
 		bbout.compact();
-		
+
 		processOut();
 		updateInterestOps();
 	}
-	
+
 	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
 			closed = true;
 		}
-		
+
 		processIn();
 		updateInterestOps();
 	}
-	
+
 	@Override
 	public SelectionKey getKey() {
 		return key;
 	}
-	
+
 	public void close() {
 		closed = true;
 	}

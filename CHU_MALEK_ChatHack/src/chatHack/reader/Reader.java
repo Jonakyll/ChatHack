@@ -1,5 +1,6 @@
 package chatHack.reader;
 
+
 public interface Reader<E> {
 
 	public static enum ProcessStatus {
@@ -11,5 +12,4 @@ public interface Reader<E> {
 	E get();
 
 	void reset();
-
 }

@@ -12,7 +12,7 @@ public class StringReader implements Reader<String> {
 	private final ByteBuffer bb;
 	private State state = State.WAITING_INT;
 	private int size;
-	private String msg;
+	private StringBuilder msg = new StringBuilder();
 
 	public StringReader(ByteBuffer bb) {
 		this.bb = bb;
@@ -31,20 +31,21 @@ public class StringReader implements Reader<String> {
 				return ProcessStatus.REFILL;
 			}
 			size = bb.getInt();
-//				if (size <= 0 || size > 1024) {
-//					System.out.println(size);
-//					return ProcessStatus.ERROR;
-//				}
 			state = State.WAITING_STRING;
 		}
 
 		case WAITING_STRING: {
+			
+//			le pb est ici
+			
 			if (bb.remaining() < size) {
+				size -= bb.remaining();
+				msg.append(StandardCharsets.UTF_8.decode(bb).toString());
 				return ProcessStatus.REFILL;
 			}
 			int oldLimit = bb.limit();
 			bb.limit(bb.position() + size);
-			msg = StandardCharsets.UTF_8.decode(bb).toString();
+			msg.append(StandardCharsets.UTF_8.decode(bb).toString());
 			bb.limit(oldLimit);
 			state = State.DONE;
 			return ProcessStatus.DONE;
@@ -60,7 +61,7 @@ public class StringReader implements Reader<String> {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-		return msg;
+		return msg.toString();
 	}
 
 	@Override

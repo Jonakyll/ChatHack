@@ -22,7 +22,7 @@ public class ServerContext implements Context {
 	private final SocketChannel sc;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocateDirect(BUFFER_SIZE);
-	private final ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
+	private ByteBuffer bbout = ByteBuffer.allocateDirect(BUFFER_SIZE);
 	
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
 
@@ -66,7 +66,14 @@ public class ServerContext implements Context {
 	
 	@Override
 	public void processOut() {
-		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
+		while (!queue.isEmpty()) {
+			if (queue.peek().remaining() > bbout.remaining()) {
+				ByteBuffer tmp = ByteBuffer.allocate(queue.peek().capacity() + bbout.capacity());
+				bbout.flip();
+				tmp.put(bbout);
+				tmp.put(queue.peek());
+				bbout = tmp;
+			}
 			bbout.put(queue.poll());
 		}
 	}

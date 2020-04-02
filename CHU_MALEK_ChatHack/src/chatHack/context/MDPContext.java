@@ -22,7 +22,7 @@ public class MDPContext implements Context {
 	private final SocketChannel sc;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
-	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
+	private ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
 	
 	private final Queue<ByteBuffer> queue = new LinkedList<>();
 	private final Reader<Frame> reader = new FrameToServerReader(bbin);
@@ -65,7 +65,14 @@ public class MDPContext implements Context {
 
 	@Override
 	public void processOut() {
-		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
+		while (!queue.isEmpty()) {
+			if (queue.peek().remaining() > bbout.remaining()) {
+				ByteBuffer tmp = ByteBuffer.allocate(queue.peek().capacity() + bbout.capacity());
+				bbout.flip();
+				tmp.put(bbout);
+				tmp.put(queue.peek());
+				bbout = tmp;
+			}
 			bbout.put(queue.poll());
 		}
 	}

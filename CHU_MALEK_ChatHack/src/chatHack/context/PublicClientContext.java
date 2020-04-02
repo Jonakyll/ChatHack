@@ -17,14 +17,14 @@ import chatHack.visitor.PublicClientAuthVisitor;
 
 public class PublicClientContext implements Context {
 
-	private static int BUFFER_SIZE = 4_096;
+	private static int BUFFER_SIZE = 1_024;
 
 	private final SelectionKey key;
 	private final SocketChannel sc;
 	private final ServerChatHack server;
 	private boolean closed = false;
 	private final ByteBuffer bbin = ByteBuffer.allocate(BUFFER_SIZE);
-	private final ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
+	private ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
 
 	private final Queue<ByteBuffer> queue = new LinkedList<>();
 	private final Reader<Frame> reader = new FrameToServerReader(bbin);
@@ -70,7 +70,14 @@ public class PublicClientContext implements Context {
 
 	@Override
 	public void processOut() {
-		while (!queue.isEmpty() && bbout.remaining() >= queue.peek().remaining()) {
+		while (!queue.isEmpty()) {
+			if (queue.peek().remaining() > bbout.remaining()) {
+				ByteBuffer tmp = ByteBuffer.allocate(queue.peek().capacity() + bbout.capacity());
+				bbout.flip();
+				tmp.put(bbout);
+				tmp.put(queue.peek());
+				bbout = tmp;
+			}
 			bbout.put(queue.poll());
 		}
 	}

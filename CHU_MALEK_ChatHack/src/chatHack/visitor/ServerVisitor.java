@@ -49,7 +49,7 @@ public class ServerVisitor implements FrameVisitor {
 		}
 		ctx.close();
 		ctx.silentlyClose();
-		client.disconnect(key);
+		client.disconnect();
 		return null;
 	}
 

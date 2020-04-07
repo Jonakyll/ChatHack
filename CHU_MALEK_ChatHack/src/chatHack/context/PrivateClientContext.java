@@ -14,6 +14,12 @@ import chatHack.reader.Reader;
 import chatHack.visitor.PrivateClientVisitor;
 import chatHack.visitor.FrameVisitor;
 
+/**
+ * 
+ * @author MALEK Akram
+ * Objet de l'interface Context permettant de recevoir et d'envoyer
+ * des messages prives vers un client connecte en prive avec un autre client.
+ */
 public class PrivateClientContext implements Context {
 
 	private static int BUFFER_SIZE = 1_024;
@@ -29,12 +35,20 @@ public class PrivateClientContext implements Context {
 	private final Reader<Frame> reader = new FrameToClientReader(bbin);
 	private final FrameVisitor visitor;
 
+	/**
+	 * Cree un objet de type PrivateClientContext.
+	 * @param client, le client ClientChatHack auquel se connecte un autre client en prive.
+	 * @param key, la SelectionKey associee au client.
+	 */
 	public PrivateClientContext(ClientChatHack client, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
 		this.visitor = new PrivateClientVisitor(key, client);
 	}
 
+	/**
+	 * Lis les donnees recues par un client.
+	 */
 	@Override
 	public void processIn() {
 		for (;;) {
@@ -57,6 +71,10 @@ public class PrivateClientContext implements Context {
 		}
 	}
 
+	/**
+	 * Ajoute un ByteBuffer a une liste de ByteBuffer a envoyer.
+	 * @param buff, un ByteBuffer contenant des donnees.
+	 */
 	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
@@ -64,6 +82,10 @@ public class PrivateClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Prepare le ByteBuffer des donnees a envoyer a un client.
+	 * Modifie la taille du ByteBuffer si la donnee a envoyer est trop volumineuse.
+	 */
 	@Override
 	public void processOut() {
 		while (!queue.isEmpty()) {
@@ -78,6 +100,9 @@ public class PrivateClientContext implements Context {
 		}
 	}
 
+	/**
+	 * Met a jour les operations possibles sur les donnees.
+	 */
 	@Override
 	public void updateInterestOps() {
 		int ops = 0;
@@ -95,6 +120,9 @@ public class PrivateClientContext implements Context {
 		}
 	}
 
+	/**
+	 * Ferme la SelectionKey liee a l'objet Context.
+	 */
 	@Override
 	public void silentlyClose() {
 		try {
@@ -104,6 +132,10 @@ public class PrivateClientContext implements Context {
 		}
 	}
 
+	/**
+	 * Connecte un client a un autre client en prive.
+	 * @throws IOException
+	 */
 	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -112,6 +144,10 @@ public class PrivateClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Envoie des donnees vers un client.
+	 * @throws IOException
+	 */
 	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
@@ -122,6 +158,10 @@ public class PrivateClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Lis les donnees recues par un client.
+	 * @throws IOException
+	 */
 	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
@@ -132,11 +172,18 @@ public class PrivateClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Renvoie la SelectionKey associee a l'objet Context.
+	 * @return la SelectionKey associee a l'objet Context.
+	 */
 	@Override
 	public SelectionKey getKey() {
 		return key;
 	}
 
+	/**
+	 * Ferme le context pour ne plus pouvoir recevoir de donnees venant d'un client.
+	 */
 	public void close() {
 		closed = true;
 	}

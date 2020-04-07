@@ -39,7 +39,7 @@ public class PublicClientNotAuthVisitor implements FrameVisitor {
 		server.addClientString(frame.getName(), ctx);
 		server.addClientLong(frame.getId(), ctx);
 
-		// a envoyer au serveur MDP
+		// a envoyer au serveur MDP + desenregistrer le client context du selector
 		server.sendToMDP(buff);
 		return buff;
 	}
@@ -57,7 +57,7 @@ public class PublicClientNotAuthVisitor implements FrameVisitor {
 		server.addClientString(frame.getName(), ctx);
 		server.addClientLong(frame.getId(), ctx);
 
-		// a envoyer au serveur MDP
+		// a envoyer au serveur MDP  + desenregistrer le client context du selector
 		server.sendToMDP(buff);
 		return buff;
 	}

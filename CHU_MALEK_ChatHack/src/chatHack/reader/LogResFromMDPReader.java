@@ -5,6 +5,12 @@ import java.nio.ByteBuffer;
 import chatHack.frame.Frame;
 import chatHack.frame.LogResFromServerMDPFrame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir un objet Frame
+ * reponse venant du serveur MDP a partir d'un ByteBuffer.
+ */
 public class LogResFromMDPReader implements Reader<Frame> {
 
 	private enum State {
@@ -13,19 +19,25 @@ public class LogResFromMDPReader implements Reader<Frame> {
 		ERROR
 	};
 	
-//	private final ByteBuffer bb;
 	private State state = State.WAITING;
 	private final byte opcode;
 	private long id;
 	
 	private final LongReader idReader;
-	
+
+	/**
+	 * Cree un objet de type LogResFromMDPReader.
+	 * @param opcode, le type de reponse du serveur MDP.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public LogResFromMDPReader(byte opcode, ByteBuffer bb) {
 		this.opcode = opcode;
-//		this.bb = bb;
 		this.idReader = new LongReader(bb);
 	}
 	
+	/**
+	 * Lis le ByteBuffer et stocke les informations liees a la reponse du serveur MDP.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -41,6 +53,9 @@ public class LogResFromMDPReader implements Reader<Frame> {
 		return ProcessStatus.DONE;
 	}
 
+	/**
+	 * Renvoie une Frame de reponse du serveur MDP.
+	 */
 	@Override
 	public Frame get() {
 		if (state != State.DONE) {
@@ -49,6 +64,9 @@ public class LogResFromMDPReader implements Reader<Frame> {
 		return new LogResFromServerMDPFrame(opcode, id);
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		idReader.reset();

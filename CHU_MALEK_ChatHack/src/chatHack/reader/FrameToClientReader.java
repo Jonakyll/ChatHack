@@ -4,6 +4,12 @@ import java.nio.ByteBuffer;
 
 import chatHack.frame.Frame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir un objet Frame
+ * venant du serveur ChatHack a partir d'un ByteBuffer.
+ */
 public class FrameToClientReader implements Reader<Frame> {
 
 	private enum State {
@@ -16,10 +22,17 @@ public class FrameToClientReader implements Reader<Frame> {
 	private Frame frame;
 	private byte opcode;
 
+	/**
+	 * Cree un objet de type FrameToClientReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public FrameToClientReader(ByteBuffer bb) {
 		this.bb = bb;
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke la valeur d'une Frame.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -110,6 +123,9 @@ public class FrameToClientReader implements Reader<Frame> {
 		}
 	}
 
+	/**
+	 * Renvoie la Frame stockee.
+	 */
 	@Override
 	public Frame get() {
 		if (state != State.DONE) {
@@ -118,8 +134,12 @@ public class FrameToClientReader implements Reader<Frame> {
 		return frame;
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
+		reader.reset();
 		reader = null;
 		state = State.WAITING;
 	}

@@ -2,6 +2,12 @@ package chatHack.reader;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir un entier
+ * a partir d'un ByteBuffer.
+ */
 public class IntReader implements Reader<Integer> {
 
 	private enum State {
@@ -12,10 +18,17 @@ public class IntReader implements Reader<Integer> {
 	private State state = State.WAITING;
 	private int value;
 
+	/**
+	 * Cree un objet de type IntReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public IntReader(ByteBuffer bb) {
 		this.bb = bb;
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke la valeur d'un entier.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -31,6 +44,9 @@ public class IntReader implements Reader<Integer> {
 		}
 	}
 
+	/**
+	 * Renvoie l'entier stocke.
+	 */
 	@Override
 	public Integer get() {
 		if (state != State.DONE) {
@@ -39,6 +55,9 @@ public class IntReader implements Reader<Integer> {
 		return value;
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		state = State.WAITING;

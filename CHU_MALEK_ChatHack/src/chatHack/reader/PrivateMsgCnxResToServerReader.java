@@ -6,13 +6,18 @@ import chatHack.frame.Frame;
 import chatHack.frame.PrivateMsgCnxAcceptedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToClientFrame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir un objet Frame
+ * de reponse a une demande de connexion privee a envoyer a un client ChatHack a partir d'un ByteBuffer.
+ */
 public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 
 	private enum State {
 		DONE, WAITING_RES_TYPE, WAITING_SRC, WAITING_DST, WAITING_PORT, WAITING_TOKEN, WAITING_IP, ERROR,
 	};
 
-//	private final ByteBuffer bb;
 	private State state = State.WAITING_RES_TYPE;
 	private byte resType;
 	private String src;
@@ -27,9 +32,12 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 	private final IntReader portReader;
 	private final LongReader tokenReader;
 	private final StringReader ipReader;
-	
+
+	/**
+	 * Cree un objet de type PrivateMsgCnxResToServerReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public PrivateMsgCnxResToServerReader(ByteBuffer bb) {
-//		this.bb = bb;
 		this.resTypeReader = new ByteReader(bb);
 		this.srcReader = new StringReader(bb);
 		this.dstReader = new StringReader(bb);
@@ -38,6 +46,10 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		this.ipReader = new StringReader(bb);
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke les informations liees
+	 * a une reponse de demande de connexion privee.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -104,6 +116,9 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		}
 	}
 
+	/**
+	 * Renvoie une Frame de reponse a une demande de connexion privee.
+	 */
 	@Override
 	public Frame get() {
 		if (state != State.DONE) {
@@ -116,6 +131,9 @@ public class PrivateMsgCnxResToServerReader implements Reader<Frame> {
 		return new PrivateMsgCnxRefusedToClientFrame(src, dst, "cnx to private channel refused");
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		resTypeReader.reset();

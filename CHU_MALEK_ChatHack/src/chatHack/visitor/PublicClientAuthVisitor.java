@@ -81,7 +81,6 @@ public class PublicClientAuthVisitor implements FrameVisitor {
 		System.out.println("private msg cnx refused to server");
 		ByteBuffer buff = frame.getByteBuffer();
 		
-		// a envoyer au serveur
 		return buff;
 	}
 
@@ -100,7 +99,6 @@ public class PublicClientAuthVisitor implements FrameVisitor {
 		System.out.println("simple msg");
 		ByteBuffer buff = frame.getByteBuffer();
 
-		// a envoyer au client
 		return buff;
 	}
 

@@ -3,6 +3,12 @@ package chatHack.reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir une chaine de
+ * caracteres a partir d'un ByteBuffer.
+ */
 public class StringReader implements Reader<String> {
 
 	private enum State {
@@ -14,10 +20,18 @@ public class StringReader implements Reader<String> {
 	private int size;
 	private StringBuilder msg = new StringBuilder();
 
+	/**
+	 * Cree un objet de type StringReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public StringReader(ByteBuffer bb) {
 		this.bb = bb;
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke un message sous forme de chaine
+	 * de caracteres ainsi que sa taille.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -36,13 +50,12 @@ public class StringReader implements Reader<String> {
 
 		case WAITING_STRING: {
 			
-//			le pb est ici
-			
 			if (bb.remaining() < size) {
 				size -= bb.remaining();
 				msg.append(StandardCharsets.UTF_8.decode(bb).toString());
 				return ProcessStatus.REFILL;
 			}
+			
 			int oldLimit = bb.limit();
 			bb.limit(bb.position() + size);
 			msg.append(StandardCharsets.UTF_8.decode(bb).toString());
@@ -56,6 +69,9 @@ public class StringReader implements Reader<String> {
 		}
 	}
 
+	/**
+	 * Renvoie la chaine de caracteres correspondant au message.
+	 */
 	@Override
 	public String get() {
 		if (state != State.DONE) {
@@ -64,6 +80,9 @@ public class StringReader implements Reader<String> {
 		return msg.toString();
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		state = State.WAITING_INT;

@@ -14,6 +14,12 @@ import chatHack.server.ServerChatHack;
 import chatHack.visitor.FrameVisitor;
 import chatHack.visitor.MDPVisitor;
 
+/**
+ * 
+ * @author MALEK Akram
+ * Objet de l'interface Context permettant de recevoir et d'envoyer
+ * des donnees vers le serveur MDP pour etablir ou non la connexion d'un client.
+ */
 public class MDPContext implements Context {
 	
 	private final static int BUFFER_SIZE = 1_024;
@@ -28,12 +34,20 @@ public class MDPContext implements Context {
 	private final Reader<Frame> reader = new FrameToServerReader(bbin);
 	private FrameVisitor visitor;
 
+	/**
+	 * Cree un objet de type MDPContext.
+	 * @param server, le serveur ChatHack qui se connecte a un serveur MDP.
+	 * @param key, la SelectionKey associee au serveur MDP.
+	 */
 	public MDPContext(ServerChatHack server, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
 		this.visitor = new MDPVisitor(server);
 	}
 	
+	/**
+	 * Lis les donnees recues par le serveur MDP.
+	 */
 	@Override
 	public void processIn() {
 		for (;;) {
@@ -55,7 +69,11 @@ public class MDPContext implements Context {
 			}
 		}
 	}
-	
+
+	/**
+	 * Ajoute un ByteBuffer a une liste de ByteBuffer a envoyer.
+	 * @param buff, un ByteBuffer contenant des donnees.
+	 */
 	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
@@ -63,20 +81,19 @@ public class MDPContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Prepare le ByteBuffer des donnees a envoyer au serveur MDP.
+	 */
 	@Override
 	public void processOut() {
-		while (!queue.isEmpty()) {
-			if (queue.peek().remaining() > bbout.remaining()) {
-				ByteBuffer tmp = ByteBuffer.allocate(queue.peek().capacity() + bbout.capacity());
-				bbout.flip();
-				tmp.put(bbout);
-				tmp.put(queue.peek());
-				bbout = tmp;
-			}
+		while (!queue.isEmpty() && queue.peek().remaining() < bbout.remaining()) {
 			bbout.put(queue.poll());
 		}
 	}
 
+	/**
+	 * Met a jour les operations possibles sur les donnees.
+	 */
 	@Override
 	public void updateInterestOps() {
 		int ops = 0;
@@ -94,6 +111,9 @@ public class MDPContext implements Context {
 		}
 	}
 
+	/**
+	 * Ferme la SelectionKey liee a l'objet Context.
+	 */
 	@Override
 	public void silentlyClose() {
 		try {
@@ -103,6 +123,10 @@ public class MDPContext implements Context {
 		}
 	}
 
+	/**
+	 * Connecte le serveur ChatHach a un serveur MDP.
+	 * @throws IOException
+	 */
 	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -111,6 +135,10 @@ public class MDPContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Envoie des donnees vers le serveur MDP.
+	 * @throws IOException
+	 */
 	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
@@ -121,6 +149,10 @@ public class MDPContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Lis les donnees recues par le serveur MDP.
+	 * @throws IOException
+	 */
 	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
@@ -131,6 +163,10 @@ public class MDPContext implements Context {
 		updateInterestOps();
 	}
 	
+	/**
+	 * Renvoie la SelectionKey associee a l'objet Context.
+	 * @return la SelectionKey associee a l'objet Context.
+	 */
 	@Override
 	public SelectionKey getKey() {
 		return key;

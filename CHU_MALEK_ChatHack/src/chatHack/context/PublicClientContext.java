@@ -15,6 +15,12 @@ import chatHack.visitor.PublicClientNotAuthVisitor;
 import chatHack.visitor.FrameVisitor;
 import chatHack.visitor.PublicClientAuthVisitor;
 
+/**
+ * 
+ * @author MALEK Akram
+ * Objet de l'interface Context permettant de recevoir et d'envoyer
+ * des donnees vers un client connecte au serveur ChatHack.
+ */
 public class PublicClientContext implements Context {
 
 	private static int BUFFER_SIZE = 1_024;
@@ -32,6 +38,11 @@ public class PublicClientContext implements Context {
 	
 	private boolean authenticated = false;
 	
+	/**
+	 * Cree un objet de type PublicClientContext.
+	 * @param server, le serveur ServerChatHack auquel se connecte notre client.
+	 * @param key, la SelectionKey associee au client;
+	 */
 	public PublicClientContext(ServerChatHack server, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
@@ -39,6 +50,9 @@ public class PublicClientContext implements Context {
 		this.visitor = new PublicClientNotAuthVisitor(server, this);
 	}
 
+	/**
+	 * Lis les donnees recues par un client.
+	 */
 	@Override
 	public void processIn() {
 		for (;;) {
@@ -61,6 +75,10 @@ public class PublicClientContext implements Context {
 		}
 	}
 
+	/**
+	 * Ajoute un ByteBuffer a une liste de ByteBuffer a envoyer.
+	 * @param buff, un ByteBuffer contenant des donnees.
+	 */
 	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
@@ -68,6 +86,10 @@ public class PublicClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Prepare le ByteBuffer des donnees a envoyer a un client.
+	 * Modifie la taille du ByteBuffer si la donnee a envoyer est trop volumineuse.
+	 */
 	@Override
 	public void processOut() {
 		while (!queue.isEmpty()) {
@@ -82,6 +104,9 @@ public class PublicClientContext implements Context {
 		}
 	}
 
+	/**
+	 * Met a jour les operations possibles sur les donnees.
+	 */
 	@Override
 	public void updateInterestOps() {
 		int ops = 0;
@@ -99,6 +124,9 @@ public class PublicClientContext implements Context {
 		}
 	}
 
+	/**
+	 * Ferme la SelectionKey liee a l'objet Context.
+	 */
 	@Override
 	public void silentlyClose() {
 		try {
@@ -108,6 +136,10 @@ public class PublicClientContext implements Context {
 		}
 	}
 	
+	/**
+	 * Connecte un client au serveur ChatHack.
+	 * @throws IOException
+	 */
 	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -116,6 +148,10 @@ public class PublicClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Envoie des donnees vers un client.
+	 * @throws IOException
+	 */
 	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
@@ -126,6 +162,10 @@ public class PublicClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Lis les donnees recues par un client.
+	 * @throws IOException
+	 */
 	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
@@ -136,15 +176,26 @@ public class PublicClientContext implements Context {
 		updateInterestOps();
 	}
 
+	/**
+	 * Renvoie la SelectionKey associee a l'objet Context.
+	 * @return la SelectionKey associee a l'objet Context.
+	 */
 	@Override
 	public SelectionKey getKey() {
 		return key;
 	}
 	
+	/**
+	 * Ferme le context pour ne plus pouvoir recevoir de donnees venant d'un client.
+	 */
 	public void close() {
 		closed = true;
 	}
 
+	/**
+	 * Change l'etat du client afin qu'il soit authentifie par le serveur.
+	 * Il pourra donc recevoir et envoyer d'autres messages.
+	 */
 	public void authenticate() {
 		authenticated = true;
 		updateVisitor();

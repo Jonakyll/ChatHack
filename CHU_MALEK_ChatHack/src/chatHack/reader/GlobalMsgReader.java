@@ -5,13 +5,18 @@ import java.nio.ByteBuffer;
 import chatHack.frame.Frame;
 import chatHack.frame.GlobalMsgFrame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir un objet Frame
+ * contenant un message global a partir d'un ByteBuffer.
+ */
 public class GlobalMsgReader implements Reader<Frame> {
 
 	private enum State {
 		DONE, WAITING_EXP, WAITING_MSG, ERROR
 	};
 
-//	private final ByteBuffer bb;
 	private State state = State.WAITING_EXP;
 	private String exp;
 	private String msg;
@@ -19,12 +24,18 @@ public class GlobalMsgReader implements Reader<Frame> {
 	private final StringReader expReader;
 	private final StringReader msgReader;
 
+	/**
+	 * Cree un objet de type GlobalMsgReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public GlobalMsgReader(ByteBuffer bb) {
-//		this.bb = bb;
 		this.expReader = new StringReader(bb);
 		this.msgReader = new StringReader(bb);
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke les informations liees a un envoi de message global.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -56,17 +67,20 @@ public class GlobalMsgReader implements Reader<Frame> {
 		}
 	}
 
+	/**
+	 * Renvoie une Frame de message global.
+	 */
 	@Override
 	public Frame get() {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
 		return new GlobalMsgFrame(exp, msg);
-
-//		verifier le cas ou le msg ne peut pas etre transfere
-//		return new SimpleMsgFrame((byte) 4, "your message cannot be send to users");
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		expReader.reset();

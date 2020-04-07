@@ -6,13 +6,18 @@ import chatHack.frame.Frame;
 import chatHack.frame.LogNoPwdToMDPFrame;
 import chatHack.frame.LogWithPwdToMDPFrame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet un objet Frame
+ * d'authentification d'un client a partir d'un ByteBuffer.
+ */
 public class LogReader implements Reader<Frame> {
 
 	private enum State {
 		DONE, WAITING_CODE, WAITING_NAME, WAITING_PASSWORD, ERROR
 	};
 
-//	private final ByteBuffer bb;
 	private State state = State.WAITING_CODE;
 	private byte code;
 	private String name;
@@ -22,13 +27,20 @@ public class LogReader implements Reader<Frame> {
 	private final StringReader nameReader;
 	private final StringReader passwordReader;
 
+	/**
+	 * Cree un objet de type LogReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public LogReader(ByteBuffer bb) {
-//		this.bb = bb;
 		this.codeReader = new ByteReader(bb);
 		this.nameReader = new StringReader(bb);
 		this.passwordReader = new StringReader(bb);
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke les informations liees
+	 * a une demande d'authentification d'un client.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -58,7 +70,6 @@ public class LogReader implements Reader<Frame> {
 				state = State.DONE;
 				return ProcessStatus.DONE;
 			}
-			// tester le cas d'erreur
 		}
 
 		case WAITING_PASSWORD: {
@@ -76,21 +87,23 @@ public class LogReader implements Reader<Frame> {
 		}
 	}
 
+	/**
+	 * Renvoie une Frame de demande d'authentification d'un client.
+	 */
 	@Override
 	public Frame get() {
 		if (state != State.DONE) {
 			throw new IllegalStateException();
 		}
-
-//		return new SimpleMsgFrame((byte) 0, "you are connected as " + name);
-
-//		les frames a envoyer au serverMDP
 		if (code == 0) {
 			return new LogWithPwdToMDPFrame(name, password);
 		}
 		return new LogNoPwdToMDPFrame(name);
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		codeReader.reset();

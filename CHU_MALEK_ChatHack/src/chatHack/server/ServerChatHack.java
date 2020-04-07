@@ -36,8 +36,7 @@ public class ServerChatHack {
 
 	private final Map<String, PublicClientContext> clientsString = new HashMap<>();
 	private final Map<Long, PublicClientContext> clientsLong = new HashMap<>();
-	
-	
+
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
 		this.MDPPort = MDPPort;
@@ -123,7 +122,7 @@ public class ServerChatHack {
 			if (ctx == null) {
 				continue;
 			}
-			if (ctx.getKey() != key) {
+			if (ctx.getKey() != key && ctx.getKey().isValid()) {
 				ctx.queueFrame(buff.duplicate());
 			}
 		}
@@ -142,7 +141,9 @@ public class ServerChatHack {
 		if (ctx == null) {
 			return;
 		}
-		ctx.queueFrame(buff);
+		if (ctx.getKey().isValid()) {
+			ctx.queueFrame(buff);
+		}
 	}
 
 	public void sendToClientLong(long id, ByteBuffer buff) {
@@ -150,27 +151,31 @@ public class ServerChatHack {
 		if (ctx == null) {
 			return;
 		}
-		ctx.queueFrame(buff);
-		ctx.authenticate();
+		if (ctx.getKey().isValid()) {
+			ctx.queueFrame(buff);
+			ctx.authenticate();
+		}
 	}
 
 	public void removeClient(SelectionKey key, ByteBuffer buff) {
-//		for (String name : clientsString.keySet()) {
-//			if (clientsString.get(name) == key) {
-//				clientsString.remove(name);
-//			}
-//		}
-//		for (long id : clientsLong.keySet()) {
-//			if (clientsLong.get(id) == key) {
-//				clientsLong.remove(id);
-//			}
-//		}
+		// for (String name : clientsString.keySet()) {
+		// if (clientsString.get(name) == key) {
+		// clientsString.remove(name);
+		// }
+		// }
+		// for (long id : clientsLong.keySet()) {
+		// if (clientsLong.get(id) == key) {
+		// clientsLong.remove(id);
+		// }
+		// }
 		PublicClientContext ctx = (PublicClientContext) key.attachment();
 		if (ctx == null) {
 			return;
 		}
-		ctx.queueFrame(buff);
-		ctx.close();
+		if (ctx.getKey().isValid()) {
+			ctx.queueFrame(buff);
+			ctx.close();
+		}
 	}
 
 	public void sendToClientString(String dst, ByteBuffer buff) {
@@ -178,7 +183,9 @@ public class ServerChatHack {
 		if (ctx == null) {
 			return;
 		}
-		ctx.queueFrame(buff);
+		if (ctx.getKey().isValid()) {
+			ctx.queueFrame(buff);
+		}
 	}
 
 	public static void main(String[] args) throws NumberFormatException, IOException {

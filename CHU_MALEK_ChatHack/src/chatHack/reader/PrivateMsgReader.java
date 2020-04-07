@@ -5,6 +5,12 @@ import java.nio.ByteBuffer;
 import chatHack.frame.Frame;
 import chatHack.frame.PrivateMsgFrame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir un objet Frame
+ * de message prive a partir d'un ByteBuffer.
+ */
 public class PrivateMsgReader implements Reader<Frame> {
 
 	private enum State {
@@ -24,6 +30,10 @@ public class PrivateMsgReader implements Reader<Frame> {
 	private final StringReader fileNameReader;
 	private final StringReader msgReader;
 
+	/**
+	 * Cree un objet de type PrivateMsgReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public PrivateMsgReader(ByteBuffer bb) {
 		this.typeReader = new ByteReader(bb);
 		this.tokenReader = new LongReader(bb);
@@ -32,6 +42,10 @@ public class PrivateMsgReader implements Reader<Frame> {
 		this.msgReader = new StringReader(bb);
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke les informations liees
+	 * au message prive.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -94,6 +108,9 @@ public class PrivateMsgReader implements Reader<Frame> {
 		}
 	}
 
+	/**
+	 * Renvoie une Frame de message prive.
+	 */
 	@Override
 	public Frame get() {
 		if (state != State.DONE) {
@@ -106,6 +123,9 @@ public class PrivateMsgReader implements Reader<Frame> {
 		}
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		typeReader.reset();

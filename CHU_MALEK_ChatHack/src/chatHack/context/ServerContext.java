@@ -14,6 +14,12 @@ import chatHack.reader.Reader;
 import chatHack.visitor.ServerVisitor;
 import chatHack.visitor.FrameVisitor;
 
+/**
+ * 
+ * @author MALEK Akram
+ * Objet de l'interface Context permettant de recevoir et d'envoyer
+ * des messages vers un serveur ChatHack.
+ */
 public class ServerContext implements Context {
 	
 	private static int BUFFER_SIZE = 1_024;
@@ -29,12 +35,20 @@ public class ServerContext implements Context {
 	private final Reader<Frame> reader = new FrameToClientReader(bbin);
 	private final FrameVisitor visitor;
 	
+	/**
+	 * Cree un objet de type ServerContext.
+	 * @param client, le client ClientChatHack qui se connecte au serveur ChatHack.
+	 * @param key, la SelectionKey associee au serveur ChatHack.
+	 */
 	public ServerContext(ClientChatHack client, SelectionKey key) {
 		this.key = key;
 		this.sc = (SocketChannel) key.channel();
 		this.visitor = new ServerVisitor(key, client);
 	}
 	
+	/**
+	 * Lis les donnees recues par le serveur ChatHack.
+	 */
 	@Override
 	public void processIn() {
 		for (;;) {
@@ -57,6 +71,10 @@ public class ServerContext implements Context {
 		}
 	}
 	
+	/**
+	 * Ajoute un ByteBuffer a une liste de ByteBuffer a envoyer.
+	 * @param buff, un ByteBuffer contenant des donnees.
+	 */
 	@Override
 	public void queueFrame(ByteBuffer buff) {
 		queue.add(buff);
@@ -64,6 +82,10 @@ public class ServerContext implements Context {
 		updateInterestOps();
 	}
 	
+	/**
+	 * Prepare le ByteBuffer des donnees a envoyer au serveur ChatHack.
+	 * Modifie la taille du ByteBuffer si la donnee a envoyer est trop volumineuse.
+	 */
 	@Override
 	public void processOut() {
 		while (!queue.isEmpty()) {
@@ -78,6 +100,9 @@ public class ServerContext implements Context {
 		}
 	}
 	
+	/**
+	 * Met a jour les operations possibles sur les donnees.
+	 */
 	@Override
 	public void updateInterestOps() {
 		int ops = 0;
@@ -95,6 +120,9 @@ public class ServerContext implements Context {
 		}
 	}
 	
+	/**
+	 * Ferme la SelectionKey liee a l'objet Context.
+	 */
 	@Override
 	public void silentlyClose() {
 		try {
@@ -104,6 +132,10 @@ public class ServerContext implements Context {
 		}
 	}
 
+	/**
+	 * Connecte un client au serveur ChatHack.
+	 * @throws IOException
+	 */
 	@Override
 	public void doConnect() throws IOException {
 		if (!sc.finishConnect()) {
@@ -112,6 +144,10 @@ public class ServerContext implements Context {
 		updateInterestOps();
 	}
 	
+	/**
+	 * Envoie des donnees vers le serveur ChatHack.
+	 * @throws IOException
+	 */
 	@Override
 	public void doWrite() throws IOException {
 		bbout.flip();
@@ -122,6 +158,10 @@ public class ServerContext implements Context {
 		updateInterestOps();
 	}
 	
+	/**
+	 * Lis les donnees recues par le serveur ChatHack.
+	 * @throws IOException
+	 */
 	@Override
 	public void doRead() throws IOException {
 		if (sc.read(bbin) == -1) {
@@ -132,11 +172,18 @@ public class ServerContext implements Context {
 		updateInterestOps();
 	}
 	
+	/**
+	 * Renvoie la SelectionKey associee a l'objet Context.
+	 * @return la SelectionKey associee a l'objet Context.
+	 */
 	@Override
 	public SelectionKey getKey() {
 		return key;
 	}
 	
+	/**
+	 * Ferme le context pour ne plus pouvoir recevoir de donnees venant du serveur ChatHack.
+	 */
 	public void close() {
 		closed = true;
 	}

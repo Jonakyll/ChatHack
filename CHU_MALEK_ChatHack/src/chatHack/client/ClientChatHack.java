@@ -28,6 +28,13 @@ import chatHack.context.Context;
 import chatHack.context.PrivateClientContext;
 import chatHack.frame.PrivateMsgFrame;
 
+/**
+ * 
+ * @author MALEK Akram
+ * Objet representant un client pour l'application ChatHack.
+ * Il peut s'agir d'un simple client voulant envoyer des messages globaux
+ * ou alors un client en plus echanger des messages prives avec un autre client connecte au meme serveur ChatHack.
+ */
 public class ClientChatHack {
 
 	private static Logger logger = Logger.getLogger(ClientChatHack.class.getName());
@@ -62,6 +69,16 @@ public class ClientChatHack {
 
 	private final BlockingQueue<String> consoleQueue = new LinkedBlockingQueue<String>();
 
+	/**
+	 * Cree un objet de type ClientChatHack.
+	 * @param ip, l'adresse ip du serveur ChatHack auquel le client veut se connecter.
+	 * @param port, le port sur lequel le serveur ChatHack il est accessible.
+	 * @param path, le chemin vers lequel on veut stocker les fichiers recus lors d'une conversation privee avec un autre client.
+	 * @param login, le pseudo sur lequel on veut s'identifier.
+	 * @param password, notre mot de passe (si notre pseudo existe dans la base de donnees du serveur ChatHack).
+	 * @param withPassword, information permettant de savoir si l'on s'identifie avec ou sans mot de passe.
+	 * @throws IOException
+	 */
 	public ClientChatHack(String ip, int port, String path, String login, String password, boolean withPassword)
 			throws IOException {
 		this.ip = ip;
@@ -157,7 +174,9 @@ public class ClientChatHack {
 			else if (command.startsWith("@")) {
 				String[] tokens = command.split(" ", 3);
 				String dst = tokens[0].substring(1);
-				sendPrivateMsg(dst, tokens[1], tokens[2]);
+				if (!dst.equals(login)) {
+					sendPrivateMsg(dst, tokens[1], tokens[2]);
+				}
 			}
 
 			// logout
@@ -189,11 +208,19 @@ public class ClientChatHack {
 		}
 	}
 
+	/**
+	 * Renvoie une valeur correspondant a si le client veut se connecter avec ou sans mot de passe.
+	 * @return true si le client se connecte au serveur ChatHack avec un mot de passe, false sinon.
+	 */
 	public boolean withPassword() {
 		return withPassword;
 	}
 
-	public void disconnect(SelectionKey key) {
+	/**
+	 * Deconnecte un client du serveur ChatHack auquel il etait connecte.
+	 * Coupe ainsi les connexions avec les autres clients en prive.
+	 */
+	public void disconnect() {
 		connectToServer.interrupt();
 		console.interrupt();
 		main.interrupt();
@@ -263,6 +290,8 @@ public class ClientChatHack {
 		console.start();
 	}
 
+	//=============================================================================
+
 	private void privateCnxRes(Scanner scan) throws IOException {
 		Random random = new Random();
 		String res;
@@ -297,7 +326,7 @@ public class ClientChatHack {
 		ByteBuffer ipBuff = StandardCharsets.UTF_8.encode(ipString);
 
 		ByteBuffer buff = ByteBuffer.allocate(3 * Byte.BYTES + 4 * Integer.BYTES + Long.BYTES + srcBuff.remaining()
-				+ dstBuff.remaining() + ipBuff.remaining());
+		+ dstBuff.remaining() + ipBuff.remaining());
 
 		buff.put((byte) 4);
 		buff.put((byte) 1);
@@ -444,7 +473,7 @@ public class ClientChatHack {
 			}
 			msgBuff.flip();
 			ByteBuffer buff = ByteBuffer.allocate(3 * Byte.BYTES + Long.BYTES + 3 * Integer.BYTES + srcBuff.remaining()
-					+ fileNameBuff.remaining() + msgBuff.remaining());
+			+ fileNameBuff.remaining() + msgBuff.remaining());
 
 			buff.put((byte) 4);
 			buff.put((byte) 2);
@@ -472,6 +501,10 @@ public class ClientChatHack {
 		}
 	}
 
+	/**
+	 * Envoie une trame de demande de deconnexion au serveur ChatHack.
+	 * @throws InterruptedException
+	 */
 	public void sendLogout() throws InterruptedException {
 		ServerContext ctx = (ServerContext) serverKey.attachment();
 		if (ctx == null) {
@@ -483,6 +516,10 @@ public class ClientChatHack {
 		ctx.queueFrame(buff);
 	}
 
+	/**
+	 * Ajoute un client a la liste des clients voulant se connecter a une discussion privee avec nous.
+	 * @param src, le pseudo du client voulant se connecter a une discussion privee avec nous.
+	 */
 	public void addSrc(String src) {
 		synchronized (monitor) {
 			privateCnxRequest = true;
@@ -490,27 +527,49 @@ public class ClientChatHack {
 		}
 	}
 
+	/**
+	 * Ajoute un client a la liste des clients ayant etablis une discussion privee avec nous.
+	 * @param src, le pseudo du client avec qui nous avons commence une discussion privee.
+	 * @param token, le token qui permet d'identifier si un client prive est autorise a nous envoyer des messages.
+	 * @param key, la SelectionKey sur laquelle est enregistre le client prive.
+	 */
 	public void addPrivateClient(String src, long token, SelectionKey key) {
 		if (!clients.containsKey(src)) {
 			clients.put(src, new Client(token, key));
 		}
 	}
 
+	/**
+	 * Lis un message prive recu par un client. Stocke le contenu s'il s'agit d'un fichier ou l'affiche s'il s'agit d'un message textuel.
+	 * @param frame, objet Frame contenant les informations sur la source du message et le contenu du message.
+	 * @throws IOException
+	 */
 	public void writeMsg(PrivateMsgFrame frame) throws IOException {
-		if (frame.getType() == 1) {
-			System.out.println(frame.getSrc() + " send you a file");
-			Path path = Paths.get(this.path + "/azdazedazd.txt");
-			ByteBuffer fileBuff = StandardCharsets.UTF_8.encode(frame.getMsg());
+		if (frame.getToken() == clients.get(frame.getSrc()).getToken()) {
 
-			try (FileChannel fc = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
-					StandardOpenOption.TRUNCATE_EXISTING)) {
-				fc.write(fileBuff);
+			if (frame.getType() == 1) {
+				System.out.println(frame.getSrc() + " sends you a file");
+				Path path = Paths.get(this.path + "/" + frame.getFileName());
+				ByteBuffer fileBuff = StandardCharsets.UTF_8.encode(frame.getMsg());
+
+				try (FileChannel fc = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
+						StandardOpenOption.TRUNCATE_EXISTING)) {
+					fc.write(fileBuff);
+				}
+			} else {
+				System.out.println(frame);
 			}
-		} else {
-			System.out.println(frame);
 		}
 	}
 
+	/**
+	 * Nous connecte a un client en prive.
+	 * @param dst, le pseudo du client a qui l'on veut envoyer des messages prives.
+	 * @param ip, son adresse ip.
+	 * @param port, le port sur lequel on peut lui envoyer des messages.
+	 * @param token, le token nous permettant d'etre considere comme autorise a envoyer des messages prives.
+	 * @throws IOException
+	 */
 	public void connectToClient(String dst, String ip, int port, long token) throws IOException {
 		lastDst = dst;
 		lastToken = token;
@@ -535,6 +594,8 @@ public class ClientChatHack {
 
 		System.out.println("channel: /" + ip + ":" + portForPrivate + " open");
 	}
+
+	//===================================================================================	
 
 	public static void main(String[] args) throws IOException {
 		if (args.length != 4 && args.length != 5) {

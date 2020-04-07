@@ -5,6 +5,12 @@ import java.nio.charset.StandardCharsets;
 
 import chatHack.visitor.FrameVisitor;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Frame representant un message prive
+ * echange entre clients.
+ */
 public class PrivateMsgFrame implements Frame {
 
 	private final byte type;
@@ -13,6 +19,13 @@ public class PrivateMsgFrame implements Frame {
 	private String fileName;
 	private final String msg;
 
+	/**
+	 * Cree un objet de type PrivateMsgFrame.
+	 * @param type, le type de message (textuel ou fichier).
+	 * @param token, le token permettant de savoir si un client est autorise ou non a envoyer des messages prives.
+	 * @param src, le pseudo du client qui envoie le message prive.
+	 * @param msg, le message du client source.
+	 */
 	public PrivateMsgFrame(byte type, long token, String src, String msg) {
 		this.type = type;
 		this.token = token;
@@ -20,6 +33,14 @@ public class PrivateMsgFrame implements Frame {
 		this.msg = msg;
 	}
 
+	/**
+	 * Cree un objet de type PrivateMsgFrame.
+	 * @param type, le type de message (textuel ou fichier).
+	 * @param token, le token permettant de savoir si un client est autorise ou non a envoyer des messages prives.
+	 * @param src, le pseudo du client qui envoie le message prive.
+	 $ @param fileName, le nom du fichier envoye.
+	 * @param msg, le fichier envoye.
+	 */
 	public PrivateMsgFrame(byte type, long token, String src, String fileName, String msg) {
 		this.type = type;
 		this.token = token;
@@ -28,11 +49,17 @@ public class PrivateMsgFrame implements Frame {
 		this.msg = msg;
 	}
 
+	/**
+	 * Appelle la methode visitPrivateMsg.
+	 */
 	@Override
 	public void accept(FrameVisitor visitor) {
 		visitor.visitPrivateMsg(this);
 	}
 
+	/**
+	 * Construit le ByteBuffer du message prive.
+	 */
 	@Override
 	public ByteBuffer getByteBuffer() {
 		if (type == 0) {
@@ -80,22 +107,42 @@ public class PrivateMsgFrame implements Frame {
 		return src + ": " + msg;
 	}
 
+	/**
+	 * Renvoie le type de message.
+	 * @return le type de message.
+	 */
 	public byte getType() {
 		return type;
 	}
 
+	/**
+	 * Renvoie le token d'identification d'un client prive.
+	 * @return le token d'identification d'un client prive.
+	 */
 	public long getToken() {
 		return token;
 	}
 
+	/**
+	 * Renvoie le pseudo du client source.
+	 * @return le pseudo du client source.
+	 */
 	public String getSrc() {
 		return src;
 	}
 
+	/**
+	 * Renvoie le nom du fichier envoye.
+	 * @return le nom du fichier envoye.
+	 */
 	public String getFileName() {
 		return fileName;
 	}
 
+	/**
+	 * Renvoie le message envoye.
+	 * @return le message envoye.
+	 */
 	public String getMsg() {
 		return msg;
 	}

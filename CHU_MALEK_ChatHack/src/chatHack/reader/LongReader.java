@@ -2,6 +2,12 @@ package chatHack.reader;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet de stocker un entier long
+ * a partir d'un ByteBuffer.
+ */
 public class LongReader implements Reader<Long> {
 
 	private enum State {
@@ -12,10 +18,17 @@ public class LongReader implements Reader<Long> {
 	private State state = State.WAITING;
 	private long value;
 
+	/**
+	 * Cree un objet de type LongReader.
+	 * @param bb, le ByteBuffer a ananlyser.
+	 */
 	public LongReader(ByteBuffer bb) {
 		this.bb = bb;
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke un entier long.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -31,6 +44,9 @@ public class LongReader implements Reader<Long> {
 		}
 	}
 
+	/**
+	 * Renvoie l'entier long stocke.
+	 */
 	@Override
 	public Long get() {
 		if (state != State.DONE) {
@@ -39,6 +55,9 @@ public class LongReader implements Reader<Long> {
 		return value;
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		state = State.WAITING;

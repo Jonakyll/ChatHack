@@ -6,13 +6,18 @@ import chatHack.frame.Frame;
 import chatHack.frame.PrivateMsgCnxAcceptedToClientFrame;
 import chatHack.frame.PrivateMsgCnxRefusedToClientFrame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface Reader qui permet d'obtenir un objet Frame
+ * de reponse a une demande de connexion privee a envoyer au serveur ChatHack a partir d'un ByteBuffer.
+ */
 public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 
 	private enum State {
 		DONE, WAITING_RES_TYPE, WAITING_SRC, WAITING_DST, WAITING_PORT, WAITING_TOKEN, WAITING_IP, WAITING_ERR_MSG, ERROR
 	};
 
-//	private final ByteBuffer bb;
 	private State state = State.WAITING_RES_TYPE;
 
 	private byte resType;
@@ -33,8 +38,11 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 
 	private final StringReader errMsgReader;
 
+	/**
+	 * Cree un objet de type PrivateMsgCnxResToClientReader.
+	 * @param bb, le ByteBuffer a analyser.
+	 */
 	public PrivateMsgCnxResToClientReader(ByteBuffer bb) {
-//		this.bb = bb;
 		this.resTypeReader = new ByteReader(bb);
 		this.srcReader = new StringReader(bb);
 		this.dstReader = new StringReader(bb);
@@ -45,6 +53,10 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 		this.errMsgReader = new StringReader(bb);
 	}
 
+	/**
+	 * Lis le ByteBuffer et stocke les informations liees
+	 * a une reponse a une demande de connexion privee.
+	 */
 	@Override
 	public ProcessStatus process() {
 		if (state == State.DONE || state == State.ERROR) {
@@ -130,6 +142,9 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 		}
 	}
 
+	/**
+	 * Renvoie une Frame de reponse a une demande de connexion privee.
+	 */
 	@Override
 	public Frame get() {
 		if (state != State.DONE) {
@@ -143,6 +158,9 @@ public class PrivateMsgCnxResToClientReader implements Reader<Frame> {
 		return new PrivateMsgCnxRefusedToClientFrame(src, dst, errMsg);
 	}
 
+	/**
+	 * Reinitialise le Reader.
+	 */
 	@Override
 	public void reset() {
 		resTypeReader.reset();

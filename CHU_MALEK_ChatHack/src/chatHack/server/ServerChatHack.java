@@ -21,6 +21,13 @@ import chatHack.context.Context;
 import chatHack.context.MDPContext;
 import chatHack.context.PublicClientContext;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet representant un serveur pour l'application ChatHack.
+ * Il permet d'identifier un client a l'aide d'un autre serveur MDP ou
+ * de diffuser des messages textuels.
+ */
 public class ServerChatHack {
 
 	private static Logger logger = Logger.getLogger(ServerChatHack.class.getName());
@@ -37,6 +44,13 @@ public class ServerChatHack {
 	private final Map<String, PublicClientContext> clientsString = new HashMap<>();
 	private final Map<Long, PublicClientContext> clientsLong = new HashMap<>();
 
+	/**
+	 * Cree un objet de type ServerChatHack.
+	 * @param port, le port sur lequel le serveur est accessible.
+	 * @param MDPIp, l'adresse ip du serveur MDP afin d'identifier des clients.
+	 * @param MDPPort, le port sur lequel le serveur MDP est accessible.
+	 * @throws IOException
+	 */
 	public ServerChatHack(int port, String MDPIp, int MDPPort) throws IOException {
 		this.MDPIp = MDPIp;
 		this.MDPPort = MDPPort;
@@ -117,6 +131,12 @@ public class ServerChatHack {
 		}
 	}
 
+	/**
+	 * Diffuse un message textuel envoye depuis un client vers
+	 * tous les autres clients connectes au serveur ChatHack.
+	 * @param key, la SelectionKey du client qui envoie le message.
+	 * @param buff, le ByteBuffer contenant le message a diffuser.
+	 */
 	public void broadcast(SelectionKey key, ByteBuffer buff) {
 		for (PublicClientContext ctx : this.clientsString.values()) {
 			if (ctx == null) {
@@ -128,14 +148,29 @@ public class ServerChatHack {
 		}
 	}
 
+	/**
+	 * Ajoute un client dans la liste des clients connectes au serveur ChatHack.
+	 * @param name, le pseudo du client.
+	 * @param ctx, son PublicClientContext associe.
+	 */
 	public void addClientString(String name, PublicClientContext ctx) {
 		this.clientsString.put(name, ctx);
 	}
 
+	/**
+	 * Ajoute un client dans la liste des clients authentifies par le serveur MDP.
+	 * @param id
+	 * @param ctx
+	 */
 	public void addClientLong(long id, PublicClientContext ctx) {
 		this.clientsLong.put(id, ctx);
 	}
 
+	/**
+	 * Envoie une frame d'authentification au serveur MDP pour
+	 * connecter (ou non) un client au serveur ChatHack.
+	 * @param buff, le ByteBuffer contenant les informations liees au client a identifier.
+	 */
 	public void sendToMDP(ByteBuffer buff) {
 		MDPContext ctx = (MDPContext) MDPKey.attachment();
 		if (ctx == null) {
@@ -146,6 +181,12 @@ public class ServerChatHack {
 		}
 	}
 
+	/**
+	 * Envoie la frame reponse du serveur MDP au client qui demande
+	 * la connexion au serveur ChatHack.
+	 * @param id, l'identifiant du client qui demande a se connecter.
+	 * @param buff, le ByteBuffer contenant la reponse du serveur MDP.
+	 */
 	public void sendToClientLong(long id, ByteBuffer buff) {
 		PublicClientContext ctx = clientsLong.get(id);
 		if (ctx == null) {
@@ -157,17 +198,12 @@ public class ServerChatHack {
 		}
 	}
 
+	/**
+	 * Envoie une frame de deconnexion au client qui demande a quitter le serveur ChatHack.
+	 * @param key, la SelectionKey associee a client qui veut se deconnecter.
+	 * @param buff, le ByteBuffer de deconnexion.
+	 */
 	public void removeClient(SelectionKey key, ByteBuffer buff) {
-		// for (String name : clientsString.keySet()) {
-		// if (clientsString.get(name) == key) {
-		// clientsString.remove(name);
-		// }
-		// }
-		// for (long id : clientsLong.keySet()) {
-		// if (clientsLong.get(id) == key) {
-		// clientsLong.remove(id);
-		// }
-		// }
 		PublicClientContext ctx = (PublicClientContext) key.attachment();
 		if (ctx == null) {
 			return;
@@ -178,6 +214,11 @@ public class ServerChatHack {
 		}
 	}
 
+	/**
+	 * Envoie une frame de connexion privee a un client destinataire.
+	 * @param dst, le pseudo du client a qui on demande la connexion privee.
+	 * @param buff, le ByteBuffer de demande de connexion privee.
+	 */
 	public void sendToClientString(String dst, ByteBuffer buff) {
 		Context ctx = clientsString.get(dst);
 		if (ctx == null) {
@@ -187,6 +228,8 @@ public class ServerChatHack {
 			ctx.queueFrame(buff);
 		}
 	}
+	
+//================================================================================
 
 	public static void main(String[] args) throws NumberFormatException, IOException {
 		if (args.length != 3) {
@@ -250,7 +293,7 @@ public class ServerChatHack {
 		}
 	}
 
-	public void printSelectedKey(SelectionKey key) {
+	private void printSelectedKey(SelectionKey key) {
 		SelectableChannel channel = key.channel();
 		if (channel instanceof ServerSocketChannel) {
 			System.out.println("\tServerSocketChannel can perform : " + possibleActionsToString(key));

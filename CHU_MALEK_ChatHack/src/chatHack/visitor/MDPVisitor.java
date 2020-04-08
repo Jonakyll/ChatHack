@@ -15,72 +15,76 @@ import chatHack.frame.PrivateMsgFrame;
 import chatHack.frame.SimpleMsgFrame;
 import chatHack.server.ServerChatHack;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface FrameVisitor qui permet
+ * au serveur ChatHack de recuperer des frames venant d'un serveur MDP
+ * d'envoyer la reponse au client qui a demander a se connecter.
+ */
 public class MDPVisitor implements FrameVisitor {
 
 	private final ServerChatHack server;
 	
+	/**
+	 * Cree un objet de type MDPVisitor.
+	 * @param server, le ServerChatHack connecte au serveur MDP.
+	 */
 	public MDPVisitor(ServerChatHack server) {
 		this.server = server;
 	}
 	
 	@Override
-	public ByteBuffer visitGlobalMsgFrame(GlobalMsgFrame frame) {
-		return null;
+	public void visitGlobalMsgFrame(GlobalMsgFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
-		return null;
+	public void visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
-		return null;
+	public void visitLogOutFrame(LogOutFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
-		return null;
+	public void visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxRefusedToClientFrame(PrivateMsgCnxRefusedToClientFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxRefusedToClientFrame(PrivateMsgCnxRefusedToClientFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxRefusedToServerFrame(PrivateMsgCnxRefusedToServerFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxRefusedToServerFrame(PrivateMsgCnxRefusedToServerFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitSimpleMsgFrame(SimpleMsgFrame frame) {
-		return null;
+	public void visitSimpleMsgFrame(SimpleMsgFrame frame) {
 	}
 
+	/**
+	 * Visite une frame de reponse d'authentification du serveur MDP
+	 * et l'envoie au client qui a demande a se connecter au serveur ChatHack.
+	 */
 	@Override
-	public ByteBuffer visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
+	public void visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
 		System.out.println("server mdp res");
 		ByteBuffer buff = frame.getByteBuffer();
 		
 		// a envoyer au client
 		server.sendToClientLong(frame.getId(), buff);
-		return buff;
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
-		return null;
+	public void visitPrivateMsg(PrivateMsgFrame frame) {
 	}
 
 }

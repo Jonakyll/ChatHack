@@ -1,7 +1,6 @@
 package chatHack.visitor;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 
 import chatHack.client.ClientChatHack;
@@ -18,85 +17,103 @@ import chatHack.frame.PrivateMsgCnxToDstFrame;
 import chatHack.frame.PrivateMsgFrame;
 import chatHack.frame.SimpleMsgFrame;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface FrameVisitor qui permet
+ * a un client ChatHack de recevoir ou d'envoyer des frames au serveur
+ */
 public class ServerVisitor implements FrameVisitor {
 
 	private final SelectionKey key;
 	private final ClientChatHack client;
 
+	/**
+	 * Cree un objet de type ServerVisitor.
+	 * @param key, la SelectionKey associee au serveur.
+	 * @param client, le ClientChatHack associe au serveur.
+	 */
 	public ServerVisitor(SelectionKey key, ClientChatHack client) {
 		this.key = key;
 		this.client = client;
 	}
 
 	@Override
-	public ByteBuffer visitGlobalMsgFrame(GlobalMsgFrame frame) {
+	public void visitGlobalMsgFrame(GlobalMsgFrame frame) {
 		System.out.println(frame);
-		return null;
 	}
 
 	@Override
-	public ByteBuffer visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
+	public void visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
 		System.out.println(frame);
-		return null;
 	}
 
+	/**
+	 * Visite une frame de deconnexion
+	 * et ferme le client.
+	 */
 	@Override
-	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
+	public void visitLogOutFrame(LogOutFrame frame) {
 		System.out.println(frame);
 		ServerContext ctx = (ServerContext) key.attachment();
 		if (ctx == null) {
-			return null;
+			return;
 		}
 		ctx.close();
 		ctx.silentlyClose();
 		client.disconnect();
-		return null;
 	}
 
 	@Override
-	public ByteBuffer visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
+	public void visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
 		System.out.println(frame);
-		return null;
 	}
 
+	/**
+	 * Visite une frame d'acceptation d'une demande de connexion privee
+	 * et connecte le client a un autre client en prive.
+	 */
 	@Override
-	public ByteBuffer visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
+	public void visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
 		try {
 			System.out.println(frame);
 			client.connectToClient(frame.getDst(), frame.getIp(), frame.getPort(), frame.getToken());
 		} catch (IOException e) {
-			return null;
+			return;
 		}
-		return null;
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxRefusedToClientFrame(PrivateMsgCnxRefusedToClientFrame frame) {
+	public void visitPrivateMsgCnxRefusedToClientFrame(PrivateMsgCnxRefusedToClientFrame frame) {
 		System.out.println(frame);
-		return null;
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxRefusedToServerFrame(PrivateMsgCnxRefusedToServerFrame frame) {
+	public void visitPrivateMsgCnxRefusedToServerFrame(PrivateMsgCnxRefusedToServerFrame frame) {
 		System.out.println(frame);
-		return null;
 	}
 
+	/**
+	 * Visite une frame de demande de connexion privee
+	 * et enregistre le client qui a demande la connexion privee.
+	 */
 	@Override
-	public ByteBuffer visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
+	public void visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
 		System.out.println(frame);
 		client.addSrc(frame.getSrc());
-		return null;
 	}
 
 	@Override
-	public ByteBuffer visitSimpleMsgFrame(SimpleMsgFrame frame) {
+	public void visitSimpleMsgFrame(SimpleMsgFrame frame) {
 		System.out.println(frame);
-		return null;
 	}
 
+	/**
+	 * Visite une frame de reponse d'authentification du serveur MDP
+	 * et connecte le client au serveur ChatHack.
+	 */
 	@Override
-	public ByteBuffer visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
+	public void visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
 		try {
 			if ((client.withPassword() && frame.getOpcode() == 1)
 					|| (!client.withPassword() && frame.getOpcode() == 0)) {
@@ -108,21 +125,19 @@ public class ServerVisitor implements FrameVisitor {
 				ServerContext ctx = (ServerContext) key.attachment();
 
 				if (ctx == null) {
-					return null;
+					return;
 				}
 			} else {
 				client.sendLogout();
 			}
-			return null;
 		} catch (InterruptedException e) {
-			return null;
+			return;
 		}
 
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
-		return null;
+	public void visitPrivateMsg(PrivateMsgFrame frame) {
 	}
 
 }

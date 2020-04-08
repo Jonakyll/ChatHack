@@ -16,84 +16,93 @@ import chatHack.frame.PrivateMsgFrame;
 import chatHack.frame.SimpleMsgFrame;
 import chatHack.server.ServerChatHack;
 
+/**
+ * 
+ * @author CHU Jonathan
+ * Objet de l'interface FrameVisitor qui permet
+ * au serveur ChatHack de recevoir des frames de demande de connexion
+ * de clients et d'envoyer des frames d'authentification au serveur MDP.
+ */
 public class PublicClientNotAuthVisitor implements FrameVisitor {
 
 	private final ServerChatHack server;
 	private final PublicClientContext ctx;
 
+	/**
+	 * Cree un objet de type PublicClientNotAuthVisitor.
+	 * @param server, le ServerChatHack associe au client non connecte.
+	 * @param ctx, le PublicClientContext associe au client non connecte.
+	 */
 	public PublicClientNotAuthVisitor(ServerChatHack server, PublicClientContext ctx) {
 		this.server = server;
 		this.ctx = ctx;
 	}
 
 	@Override
-	public ByteBuffer visitGlobalMsgFrame(GlobalMsgFrame frame) {
-		return null;
+	public void visitGlobalMsgFrame(GlobalMsgFrame frame) {
 	}
 
+	/**
+	 * Visite une frame de demande de connexion sans mot de passe
+	 * et envoie une frame d'authentification au serveur MDP.
+	 */
 	@Override
-	public ByteBuffer visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
+	public void visitLogNoPwdToMDPFrame(LogNoPwdToMDPFrame frame) {
 		System.out.println("log no pwd to mdp");
 		ByteBuffer buff = frame.getByteBuffer();
 		
 		server.addClientString(frame.getName(), ctx);
 		server.addClientLong(frame.getId(), ctx);
 
-		// a envoyer au serveur MDP + desenregistrer le client context du selector
+		// a envoyer au serveur MDP
 		server.sendToMDP(buff);
-		return buff;
 	}
 
 	@Override
-	public ByteBuffer visitLogOutFrame(LogOutFrame frame) {
-		return null;
+	public void visitLogOutFrame(LogOutFrame frame) {
 	}
 
+	/**
+	 * Visite une frame de demande de connexion avec mot de passe
+	 * et envoie une frame d'authentification au serveur MDP.
+	 */
 	@Override
-	public ByteBuffer visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
+	public void visitLogWithPwdToMDPFrame(LogWithPwdToMDPFrame frame) {
 		System.out.println("log with pwd to mdp");
 		ByteBuffer buff = frame.getByteBuffer();
 		
 		server.addClientString(frame.getName(), ctx);
 		server.addClientLong(frame.getId(), ctx);
 
-		// a envoyer au serveur MDP  + desenregistrer le client context du selector
+		// a envoyer au serveur MDP
 		server.sendToMDP(buff);
-		return buff;
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxAcceptedToClientFrame(PrivateMsgCnxAcceptedToClientFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxRefusedToClientFrame(PrivateMsgCnxRefusedToClientFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxRefusedToClientFrame(PrivateMsgCnxRefusedToClientFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxRefusedToServerFrame(PrivateMsgCnxRefusedToServerFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxRefusedToServerFrame(PrivateMsgCnxRefusedToServerFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
-		return null;
+	public void visitPrivateMsgCnxToDstFrame(PrivateMsgCnxToDstFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitSimpleMsgFrame(SimpleMsgFrame frame) {
-		return null;
+	public void visitSimpleMsgFrame(SimpleMsgFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
-		return null;
+	public void visitLogResFromServerMDPFrame(LogResFromServerMDPFrame frame) {
 	}
 
 	@Override
-	public ByteBuffer visitPrivateMsg(PrivateMsgFrame frame) {
-		return null;
+	public void visitPrivateMsg(PrivateMsgFrame frame) {
 	}
 }

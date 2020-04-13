@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import chatHack.frame.Frame;
-import chatHack.reader.FrameToServerReader;
+import chatHack.reader.FrameFromServerReader;
 import chatHack.reader.Reader;
 import chatHack.server.ServerChatHack;
 import chatHack.visitor.PublicClientNotAuthVisitor;
@@ -33,7 +33,7 @@ public class PublicClientContext implements Context {
 	private ByteBuffer bbout = ByteBuffer.allocate(BUFFER_SIZE);
 
 	private final Queue<ByteBuffer> queue = new LinkedList<>();
-	private final Reader<Frame> reader = new FrameToServerReader(bbin);
+	private final Reader<Frame> reader = new FrameFromServerReader(bbin);
 	private FrameVisitor visitor;
 	
 	private boolean authenticated = false;

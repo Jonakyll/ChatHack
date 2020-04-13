@@ -10,7 +10,7 @@ import chatHack.frame.Frame;
  * Objet de l'interface Reader qui permet d'obtenir un objet Frame
  * venant d'un client ChatHack ou du serveur MDP a partir d'un ByteBuffer.
  */
-public class FrameToServerReader implements Reader<Frame> {
+public class FrameFromServerReader implements Reader<Frame> {
 
 	private enum State {
 		DONE, WAITING, ERROR
@@ -23,10 +23,10 @@ public class FrameToServerReader implements Reader<Frame> {
 	private byte opcode;
 
 	/**
-	 * Cree un objet de type FrameToServerReader.
+	 * Cree un objet de type FrameFromServerReader.
 	 * @param bb, le ByteBuffer a analyser.
 	 */
-	public FrameToServerReader(ByteBuffer bb) {
+	public FrameFromServerReader(ByteBuffer bb) {
 		this.bb = bb;
 	}
 

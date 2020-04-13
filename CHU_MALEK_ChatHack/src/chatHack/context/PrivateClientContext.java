@@ -9,7 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import chatHack.client.ClientChatHack;
 import chatHack.frame.Frame;
-import chatHack.reader.FrameToClientReader;
+import chatHack.reader.FrameFromClientReader;
 import chatHack.reader.Reader;
 import chatHack.visitor.PrivateClientVisitor;
 import chatHack.visitor.FrameVisitor;
@@ -32,7 +32,7 @@ public class PrivateClientContext implements Context {
 
 	private final BlockingQueue<ByteBuffer> queue = new LinkedBlockingQueue<>();
 
-	private final Reader<Frame> reader = new FrameToClientReader(bbin);
+	private final Reader<Frame> reader = new FrameFromClientReader(bbin);
 	private final FrameVisitor visitor;
 
 	/**

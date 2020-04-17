@@ -267,7 +267,7 @@ public class ServerChatHack {
 		return String.join("|", list);
 	}
 
-	public void printKeys() {
+	private void printKeys() {
 		Set<SelectionKey> selectionKeySet = selector.keys();
 		if (selectionKeySet.isEmpty()) {
 			System.out.println("The selector contains no key : this should not happen!");
